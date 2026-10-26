@@ -3,11 +3,16 @@
 <meta name="theme-color" content="#2a1a10"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Cuaderno">
 <link rel="manifest" href="manifest.json"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png">
-<style>html,body{margin:0;height:100%;background:#1a0f08}[hidden]{display:none!important}</style></head><body>
+<style>html,body{margin:0;height:100%;background:#1a0f08}[hidden]{display:none!important}
+#boot{position:fixed;inset:0;z-index:9999;background:#1a0f08;color:#f3e6d0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font:22px Georgia,serif;text-align:center;padding:24px}
+#boot small{opacity:.75;font:14px monospace;max-width:90%;word-break:break-word}#boot.err b{color:#ffb4a8}</style>
+<script>addEventListener('error',function(e){var b=document.getElementById('boot');if(b){b.classList.add('err');b.querySelector('small').textContent='Error: '+(e.message||'')+' (línea '+(e.lineno||'?')+')'}});
+setTimeout(function(){var b=document.getElementById('boot');if(b&&!b.classList.contains('err')){b.querySelector('small').textContent='Está tardando. Si no abre, ciérrala y vuelve a abrirla.'}},9000);</script></head><body>
+<div id="boot"><b>Abriendo tu cuaderno…</b><small></small></div>
 <title>Mi Cuaderno de Rayas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap">
 <style>
 /* Layout: one-screen app — a spiral notebook on a dark oak desk; day, sunset or moonlit room light, a desk lamp base top-left, the tools button top-right, the notebook menu drops from the top */
 :root{
@@ -382,7 +387,7 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
 <div id="wmBar" aria-label="Modo escritura"><span>✍ Escritura</span><button id="wmLine" type="button">↵ Renglón</button><button id="wmOut" type="button">Salir</button></div>
 
 <script>
-(function(){
+function __start(){(function(){
 'use strict';
 const $=s=>document.querySelector(s);
 const KEY='cuaderno-rayas-v2',OLD='cuaderno-rayas-v1',MAXP=100;
@@ -812,7 +817,7 @@ function layout(force){
   const ae=document.activeElement;
   if(!force&&L.aw===aw&&(ae&&(ae.tagName==='TEXTAREA'||ae.tagName==='INPUT')))return;
   if(!force&&L.aw===aw&&L.ah===ah)return;
-  const W=Math.floor(Math.min(aw-22,(ah-100)*210/275,640)),H=Math.floor(W*275/210);
+  const W=Math.max(160,Math.floor(Math.min(aw-22,(ah-100)*210/275,640))),H=Math.floor(W*275/210);
   const lh=H/33.5,top=lh*3.1,rows=Math.floor((H-top-lh*1.3)/lh);
   L={aw,ah,W,H,lh,top,rows,ml:W*.13,k:W/1000,dpr:Math.min(window.devicePixelRatio||1,3),Hu:H*1000/W,ppm:W/210,
      bx:Math.round((aw-W)/2+5),by:Math.round(Math.max(84,(ah-H)/2+20))};
@@ -2048,12 +2053,14 @@ document.addEventListener('keydown',e=>{const tg=e.target.tagName;if(tg==='TEXTA
   if(e.key==='ArrowRight'&&!busy&&!B().closed){prepUnderForNext();flipNext(0)}if(e.key==='ArrowLeft'&&!busy&&!B().closed)flipPrev();if(e.key==='Escape')closeAll()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(saveT);persist()}});
 let rz;window.addEventListener('resize',()=>{sizeBg();clearTimeout(rz);rz=setTimeout(()=>layout(false),140)});
-sizeBg();layout(true);
+sizeBg();layout(true);{const bt=document.getElementById('boot');if(bt)bt.remove()}
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>layout(true));
 if(fresh){DB.seen=11;save();setTimeout(()=>toast('Toca el botón de arriba a la derecha para sacar tus útiles',3200),700)}
 else if(DB.seen!==11){const news=['Nueva vista de la ventana: toca las lámparas, la vela y el estéreo'];
   DB.seen=11;save();news.forEach((m,i)=>setTimeout(()=>toast(m,3000),700+i*3400))}
 })();
+}
+(function(){var n=0;function go(){if((innerHeight<300||innerWidth<200)&&n++<30){setTimeout(go,100);return}try{__start()}catch(e){var b=document.getElementById('boot');if(b){b.classList.add('err');b.querySelector('small').textContent='Error: '+e.message}}}requestAnimationFrame(function(){setTimeout(go,40)})})();
 </script>
 
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
