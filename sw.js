@@ -1,4 +1,4 @@
-const V='cuaderno-v3';
+const V='cuaderno-v4';
 const SHELL=['./','index.html','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','fonts/fonts.css','fonts/kalam-400.woff2','fonts/kalam-700.woff2','fonts/patrick-hand-400.woff2'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==V).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
