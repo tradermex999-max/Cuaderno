@@ -2168,5 +2168,21 @@ else if(DB.seen!==11){const news=['Nueva vista de la ventana: toca las lámparas
 (function(){var n=0;function go(){if((innerHeight<300||innerWidth<200)&&n++<30){setTimeout(go,100);return}try{__start()}catch(e){var b=document.getElementById('boot');if(b){b.classList.add('err');b.querySelector('small').textContent='Error: '+e.message}}}requestAnimationFrame(function(){setTimeout(go,40)})})();
 </script>
 
-<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+<script>
+if('serviceWorker' in navigator)addEventListener('load',function(){
+  var had=!!navigator.serviceWorker.controller,shown=false;
+  function bar(){if(shown)return;shown=true;var d=document.createElement('div');
+    d.style.cssText='position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:10px;background:#2b2925;color:#fffaf0;font:17px "Patrick Hand",sans-serif;padding:8px 8px 8px 16px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.5);white-space:nowrap;max-width:calc(100vw - 24px)';
+    d.innerHTML='<span>Hay una versión nueva</span>';var b=document.createElement('button');b.textContent='Actualizar';
+    b.style.cssText='font:inherit;border:0;border-radius:10px;padding:7px 14px;background:#fffaf0;color:#2b2925;cursor:pointer';
+    b.onclick=function(){b.textContent='…';location.reload()};d.appendChild(b);document.body.appendChild(d)}
+  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='upd')bar()});
+  navigator.serviceWorker.addEventListener('controllerchange',function(){if(had)bar();had=true});
+  navigator.serviceWorker.register('sw.js').then(function(r){
+    function chk(){try{r.update()}catch(e){}fetch('index.html',{cache:'no-cache'}).catch(function(){})}
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});
+    setInterval(function(){if(!document.hidden)chk()},600000);
+  }).catch(function(){});
+});
+</script>
 </body></html>
