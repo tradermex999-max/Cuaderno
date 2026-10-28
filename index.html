@@ -333,6 +333,7 @@ body.raining[data-light=noche] #storm{opacity:1}
 .songrow{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 0;border-bottom:1px dashed rgba(43,41,37,.18)}
 .songrow b{flex:1;min-width:0;font:700 18px var(--hand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .songrow.now b{color:var(--accent)}
+.songrow small{font:14px var(--label);color:var(--ui-mute);white-space:nowrap}
 @media (prefers-reduced-motion: reduce){*{transition-duration:.01s!important}#bird{display:none}#flame,#stereo.playing .eq i{animation:none}}
 </style>
 
@@ -734,27 +735,30 @@ const SFX=(function(){
   function thunder(){if(!ctx||!on()||!rainWant)return;const T=thPool.shift();buildThunder();if(!T){setTimeout(()=>{if(thPool.length&&rainWant)thunder()},900);return}
     const src=ctx.createBufferSource();src.buffer=T.b;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=(winOpen?1500:480)*(.7+T.near*.6);const g=ctx.createGain();g.gain.value=(winOpen?.95:.65)*(.55+T.near*.45);
     src.connect(lp);lp.connect(g);g.connect(dry);src.start()}
-  /* música del estéreo: sonido de minicomponente de los 2000, cálido y acolchado */
-  let mch=null;
-  function setEQ(onn){if(mch){mch.ls.gain.value=onn?3.5:0;mch.pk.gain.value=onn?-2.5:0;mch.hs.gain.value=onn?-6:0;mch.wet.gain.value=onn?.07:0}setEQ2(onn)}
-  let mch2=null;
-  function musicChain2(au){if(mch2)return mch2;const c=init();if(!c)return null;try{if(c.state!=='running')c.resume().catch(()=>{});const src=c.createMediaElementSource(au);
-    const bq2=(t,f,q)=>{const b=c.createBiquadFilter();b.type=t;b.frequency.value=f;if(q)b.Q.value=q;return b};
-    const hp2=bq2('highpass',35),ls2=bq2('lowshelf',120),pk2=bq2('peaking',2600,.8),hs2=bq2('highshelf',7000),ws2=c.createWaveShaper(),cur2=new Float32Array(1024);
-    for(let i=0;i<1024;i++){const v=i/511.5-1;cur2[i]=Math.tanh(v*1.4)/Math.tanh(1.4)}ws2.curve=cur2;ws2.oversample='2x';
-    const cp2=c.createDynamicsCompressor();cp2.threshold.value=-20;cp2.ratio.value=2.5;cp2.knee.value=12;cp2.attack.value=.02;cp2.release.value=.25;
-    const out2=c.createGain();out2.gain.value=.92;const an2=c.createAnalyser();an2.fftSize=256;an2.smoothingTimeConstant=.78;const rv2=c.createConvolver();rv2.buffer=roomIR();const wet2=c.createGain();
-    src.connect(hp2);hp2.connect(ls2);ls2.connect(pk2);pk2.connect(hs2);hs2.connect(ws2);ws2.connect(cp2);cp2.connect(out2);cp2.connect(rv2);rv2.connect(wet2);wet2.connect(out2);out2.connect(an2);an2.connect(c.destination);
-    mch2={ls:ls2,pk:pk2,hs:hs2,wet:wet2,an:an2};setEQ2(DB.eqClassic!==false);return mch2}catch(e){return null}}
-  function setEQ2(onn){if(!mch2)return;mch2.ls.gain.value=onn?3.5:0;mch2.pk.gain.value=onn?-2.5:0;mch2.hs.gain.value=onn?-6:0;mch2.wet.gain.value=onn?.07:0}
-  function musicChain(au){if(mch)return mch;const c=init();if(!c)return null;try{if(c.state!=='running')c.resume().catch(()=>{});const src=c.createMediaElementSource(au);
+  /* música del estéreo: tres sonidos — original, clásico (cálido) y 2000 (mega bass, brillo y un toque de MP3) */
+  let mch=null,mch2=null;
+  const EQM={normal:{ls:[120,0],pk:[2600,0,.8],bx:0,hs:0,lp:22000,sat:0,cpT:0,cpR:1,wet:0,wd:1},
+    clasico:{ls:[120,3.5],pk:[2600,-2.5,.8],bx:0,hs:-6,lp:22000,sat:.85,cpT:-20,cpR:2.5,wet:.07,wd:1},
+    '2000':{ls:[90,8],pk:[900,-3,.9],bx:3,hs:3,lp:16000,sat:1,cpT:-22,cpR:3,wet:.05,wd:.7}};
+  const eqMode=()=>EQM[DB.eqMode]?DB.eqMode:(DB.eqClassic===false?'normal':'clasico');
+  function applyEQ(ch,m){const E=EQM[m]||EQM.clasico,t=ctx.currentTime,s=(q,v)=>{try{q.setTargetAtTime(v,t,.06)}catch(e){}};
+    s(ch.ls.frequency,E.ls[0]);s(ch.ls.gain,E.ls[1]);s(ch.pk.frequency,E.pk[0]);s(ch.pk.gain,E.pk[1]);s(ch.pk.Q,E.pk[2]);s(ch.bx.gain,E.bx);s(ch.hs.gain,E.hs);s(ch.lp.frequency,E.lp);
+    s(ch.sw.gain,E.sat);s(ch.sd.gain,1-E.sat);s(ch.cp.threshold,E.cpT);s(ch.cp.ratio,E.cpR);s(ch.wet.gain,E.wet);const A=(1+E.wd)/2,Bv=(1-E.wd)/2;s(ch.gLL.gain,A);s(ch.gRR.gain,A);s(ch.gLR.gain,Bv);s(ch.gRL.gain,Bv)}
+  function mkChain(au){const c=init();if(!c)return null;try{if(c.state!=='running')c.resume().catch(()=>{});const src=c.createMediaElementSource(au);
     const bq=(t,f,q)=>{const b=c.createBiquadFilter();b.type=t;b.frequency.value=f;if(q)b.Q.value=q;return b};
-    const hp=bq('highpass',35),ls=bq('lowshelf',120),pk=bq('peaking',2600,.8),hs=bq('highshelf',7000),ws=c.createWaveShaper(),cur=new Float32Array(1024);
-    for(let i=0;i<1024;i++){const v=i/511.5-1;cur[i]=Math.tanh(v*1.4)/Math.tanh(1.4)}ws.curve=cur;ws.oversample='2x';
-    const cp=c.createDynamicsCompressor();cp.threshold.value=-20;cp.ratio.value=2.5;cp.knee.value=12;cp.attack.value=.02;cp.release.value=.25;
+    const hp=bq('highpass',40),ls=bq('lowshelf',120),bx=bq('peaking',220,1),pk=bq('peaking',2600,.8),hs=bq('highshelf',7000),lp=bq('lowpass',22000,.7),ws=c.createWaveShaper(),cur=new Float32Array(1024);
+    for(let i=0;i<1024;i++){const v=i/511.5-1;cur[i]=Math.tanh(v*1.6)/Math.tanh(1.6)}ws.curve=cur;ws.oversample='4x';
+    const sd=c.createGain(),sw=c.createGain(),cp=c.createDynamicsCompressor();cp.knee.value=12;cp.attack.value=.02;cp.release.value=.25;
+    const up=c.createGain();up.channelCount=2;up.channelCountMode='explicit';up.channelInterpretation='speakers';
+    const sp=c.createChannelSplitter(2),mg=c.createChannelMerger(2),gLL=c.createGain(),gRR=c.createGain(),gLR=c.createGain(),gRL=c.createGain();
     const out=c.createGain();out.gain.value=.92;const an=c.createAnalyser();an.fftSize=256;an.smoothingTimeConstant=.78;const rv=c.createConvolver();rv.buffer=roomIR();const wet=c.createGain();
-    src.connect(hp);hp.connect(ls);ls.connect(pk);pk.connect(hs);hs.connect(ws);ws.connect(cp);cp.connect(out);cp.connect(rv);rv.connect(wet);wet.connect(out);out.connect(an);an.connect(c.destination);
-    mch={ls,pk,hs,wet,an};setEQ(DB.eqClassic!==false);return mch}catch(e){return null}}
+    src.connect(hp);hp.connect(ls);ls.connect(bx);bx.connect(pk);pk.connect(hs);hs.connect(lp);lp.connect(sd);lp.connect(ws);ws.connect(sw);sd.connect(cp);sw.connect(cp);cp.connect(up);up.connect(sp);
+    sp.connect(gLL,0);sp.connect(gLR,0);sp.connect(gRR,1);sp.connect(gRL,1);gLL.connect(mg,0,0);gRL.connect(mg,0,0);gRR.connect(mg,0,1);gLR.connect(mg,0,1);
+    mg.connect(out);cp.connect(rv);rv.connect(wet);wet.connect(out);out.connect(an);an.connect(c.destination);
+    const ch={ls,bx,pk,hs,lp,sd,sw,cp,wet,an,gLL,gRR,gLR,gRL};applyEQ(ch,eqMode());return ch}catch(e){return null}}
+  function setEQ(m){m=EQM[m]?m:eqMode();if(mch)applyEQ(mch,m);if(mch2)applyEQ(mch2,m)}
+  function musicChain(au){return mch||(mch=mkChain(au))}
+  function musicChain2(au){return mch2||(mch2=mkChain(au))}
 
   const SCR={lapiz:{k:'graf',v:.34},verde:{k:'soft',v:.38},azul:{k:'ball',v:.15},negra:{k:'ball',v:.15},roja:{k:'ball',v:.15},borrador:{k:'rub',v:.42},corrector:{k:'liq',v:.16},marcador:{k:'felt',v:.2},color:{k:'graf',v:.3},plumonN:{k:'felt',v:.3},plumonA:{k:'felt',v:.3},plumonR:{k:'felt',v:.3},plumonV:{k:'felt',v:.3},borradorP:{k:'rub',v:.3},crayon:{k:'soft',v:.45},marcadorG:{k:'felt',v:.26}};
   function scratchBurst(k,ms){if(!on()||!SCR[k])return;const c=SCR[k],src=ctx.createBufferSource();src.buffer=loop(c.k);src.loop=true;const g=ctx.createGain();g.gain.value=0;src.connect(g);g.connect(master);const t=ctx.currentTime;src.start(t,Math.random()*2);g.gain.setTargetAtTime(c.v*.8,t,.03);g.gain.setTargetAtTime(0,t+ms/1000,.05);src.stop(t+ms/1000+.4)}
@@ -2229,7 +2233,7 @@ const MUS=(function(){let db=null,list=[],idx=DB.songIdx|0,playing=false,url=nul
   async function load(i){if(!list.length)await refresh();if(!list.length)return false;idx=((i%list.length)+list.length)%list.length;DB.songIdx=idx;save();const s2=list[idx];
     if(urlId!==s2.id){let blob=mem[s2.id];if(!blob){const d=await idb();const rec=d&&await req(d.transaction('songs').objectStore('songs').get(s2.id));blob=rec&&rec.blob}
       if(!blob)return false;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);urlId=s2.id;au.src=url}return true}
-  async function play(i){RADIO.pause();bless();if(await SFX.ctxReady())SFX.musicChain(au);
+  async function play(i){RADIO.pause();bless();DB.lastSource='songs';if(await SFX.ctxReady())SFX.musicChain(au);
     if(i!=null||!urlId){if(!await load(i==null?idx:i)){lcd('SIN CANCIÓN','TOCA ⏏ PARA AGREGAR');stereoUI();return}}
     try{await au.play();playing=true}catch(e){playing=false;const na=e&&e.name==='NotAllowedError';lcd(na?'TOCA ▶':'NO SE PUEDE',na?'OTRA VEZ':'REPRODUCIR')}stereoUI()}
   function pause(){au.pause();playing=false;stereoUI()}
@@ -2252,29 +2256,49 @@ const STATIONS=[
   {id:'paradise',name:'Radio Paradise Suave',tag:'Variado, tranquilo',url:'https://stream.radioparadise.com/mellow-128'},
   {id:'folk',name:'Café Folk',tag:'Folk / acústico',url:'https://ice1.somafm.com/folkfwd-128-mp3'}
 ];
-const RADIO=(function(){let idx=DB.radioIdx|0;if(idx<0||idx>=STATIONS.length)idx=0;let playing=false,loading=false,blessed=false;
-  const au=new Audio();au.preload='none';au.setAttribute('playsinline','');
-  function setVol(){const v=DB.vol??.6;au.volume=Math.max(0,Math.min(1,v*v))}
+const RADIO=(function(){let idx=DB.radioIdx|0,playing=false,loading=false,cur=null,token=0,chained=false;
+  const mk=cors=>{const a=new Audio();a.preload='none';a.setAttribute('playsinline','');if(cors)a.crossOrigin='anonymous';return a};
+  const auC=mk(true),auN=mk(false),list=()=>STATIONS.concat(Array.isArray(DB.stations)?DB.stations:[]),np=()=>DB.noProc||(DB.noProc={});
+  if(idx<0||idx>=list().length)idx=0;
+  function setVol(){const v=DB.vol??.6,vv=Math.max(0,Math.min(1,v*v));auC.volume=vv;auN.volume=vv}
   setVol();
-  function bless(){if(blessed)return;blessed=true}
-  async function play(i){MUS.pause();bless();if(i!=null)idx=i;DB.radioIdx=idx;DB.lastSource='radio';save();
-    const st=STATIONS[idx];loading=true;lcd('SINTONIZANDO',st.name,9000);stereoUI();
-    try{if(au.src!==st.url){au.src=st.url}await SFX.ctxReady();
-      await au.play();playing=true;loading=false;lcd('RADIO',st.name,1800);stereoUI()}
-    catch(e){playing=false;loading=false;const na=e&&e.name==='NotAllowedError';
-      lcd(na?'TOCA ▶':'SIN SEÑAL',na?'OTRA VEZ':'INTENTA OTRA',3400);stereoUI()}}
-  function pause(){au.pause();playing=false;loading=false;stereoUI()}
-  function toggle(){playing?pause():play()}
-  function next(){play((idx+1)%STATIONS.length)}
-  function prev(){play((idx-1+STATIONS.length)%STATIONS.length)}
-  au.addEventListener('waiting',()=>{if(playing){loading=true;lcd('CARGANDO',STATIONS[idx].name,6000)}});
-  au.addEventListener('playing',()=>{loading=false;playing=true;stereoUI()});
-  au.addEventListener('stalled',()=>{if(playing){loading=true;lcd('SEÑAL DÉBIL',STATIONS[idx].name,4000)}});
-  au.addEventListener('error',()=>{if(!playing&&!loading)return;playing=false;loading=false;
-    lcd('ESTA EMISORA','NO RESPONDE',3600);toast('Esta estación de radio no cargó. Prueba otra en ⏏',4200);stereoUI()});
-  return{get idx(){return idx},get playing(){return playing},get loading(){return loading},au,play,pause,toggle,next,prev,setVol,
-    get station(){return STATIONS[idx]}}
+  const stopAll=()=>{for(const a of [auC,auN]){try{a.pause()}catch(e){}}};
+  function tryPlay(a,url){return new Promise(res=>{let done=false;const fin=v=>{if(done)return;done=true;a.removeEventListener('error',onE);res(v)},onE=()=>fin(false);a.addEventListener('error',onE);
+    try{if(a.src!==url)a.src=url;const pr=a.play();if(pr&&pr.then)pr.then(()=>fin(true)).catch(e=>fin(e&&e.name==='NotAllowedError'?'na':false))}catch(e){fin(false)}setTimeout(()=>fin(false),12000)})}
+  async function play(i){MUS.pause();const L=list();if(i!=null)idx=((i%L.length)+L.length)%L.length;DB.radioIdx=idx;DB.lastSource='radio';save();const st=L[idx]||L[0],my=++token;
+    stopAll();loading=true;playing=false;lcd('SINTONIZANDO',st.name,12000);stereoUI();
+    const ready=await SFX.ctxReady();if(my!==token)return;let r=false;
+    if(ready&&!np()[st.url]){if(!chained){SFX.musicChain2(auC);chained=true}cur=auC;r=await tryPlay(auC,st.url);if(my!==token)return;
+      if(r===false){try{auC.pause();auC.removeAttribute('src');auC.load()}catch(e){}np()[st.url]=1;save()}}
+    if(r===false){cur=auN;r=await tryPlay(auN,st.url);if(my!==token)return}
+    loading=false;if(r===true){playing=true;lcd('RADIO',cur===auC?st.name:st.name+' (sin EQ)',2000)}
+    else{playing=false;stopAll();if(r==='na')lcd('TOCA ▶','OTRA VEZ',3400);else{lcd('ESTA EMISORA','NO RESPONDE',3600);toast('Esta estación no cargó. Prueba otra o toca «Probar emisoras» en ⏏',4600)}}stereoUI()}
+  function pause(){token++;stopAll();playing=false;loading=false;stereoUI()}
+  for(const a of [auC,auN]){
+    a.addEventListener('waiting',()=>{if(a===cur&&playing){loading=true;lcd('CARGANDO',(list()[idx]||{}).name||'',6000)}});
+    a.addEventListener('playing',()=>{if(a===cur&&(playing||loading)){loading=false;playing=true;stereoUI()}});
+    a.addEventListener('stalled',()=>{if(a===cur&&playing)lcd('SEÑAL DÉBIL',(list()[idx]||{}).name||'',4000)});
+    a.addEventListener('error',()=>{if(a!==cur||!playing)return;playing=false;loading=false;lcd('SE CORTÓ','LA SEÑAL',3600);stereoUI()})}
+  return{get idx(){return idx},get playing(){return playing},get loading(){return loading},get list(){return list()},get au(){return cur||auN},get processed(){return cur===auC},
+    play,pause,toggle:()=>playing?pause():play(),next:()=>play(idx+1),prev:()=>play(idx-1),setVol,get station(){return list()[idx]||STATIONS[0]}}
 })();
+/* directorio abierto de emisoras (Radio Browser): busca emisoras de México que transmiten por internet */
+const RB_HOSTS=['de1','nl1','at1','de2'];
+async function rbSearch(q){const e=encodeURIComponent(q),tail='&countrycode=MX&hidebroken=true&order=clickcount&reverse=true&limit=30',paths=[`/json/stations/search?name=${e}${tail}`,`/json/stations/search?state=${e}${tail}`];
+  for(const h of RB_HOSTS){try{const rs=await Promise.all(paths.map(pa=>fetch(`https://${h}.api.radio-browser.info${pa}`).then(r=>{if(!r.ok)throw new Error('http');return r.json()})));
+      const seen=new Set(),out=[];for(const arr of rs)for(const s of (Array.isArray(arr)?arr:[])){const u=String(s.url_resolved||s.url||'').trim();if(!/^https:\/\//i.test(u)||seen.has(s.stationuuid))continue;if(s.codec&&!/mp3|aac/i.test(s.codec))continue;
+        seen.add(s.stationuuid);out.push({id:'rb-'+s.stationuuid,name:String(s.name||'Emisora').trim().slice(0,60),tag:[s.state,String(s.tags||'').split(',')[0]].filter(Boolean).join(' · ').slice(0,60)||'México',url:u})}
+      return out}catch(e){}}
+  return null}
+async function testStations(box){const L=RADIO.list,np=DB.noProc||(DB.noProc={});box.innerHTML='';RADIO.pause();
+  const probe=(url,cors)=>new Promise(res=>{const a=new Audio();a.preload='auto';a.muted=true;if(cors)a.crossOrigin='anonymous';let d=false;
+    const fin=v=>{if(d)return;d=true;try{a.pause();a.removeAttribute('src');a.load()}catch(e){}res(v)};a.addEventListener('canplay',()=>fin('ok'));a.addEventListener('error',()=>fin('e'+(a.error?a.error.code:'')));setTimeout(()=>fin('t'),9000);
+    try{a.src=url;a.load()}catch(e){fin('e')}});
+  let good=0;for(const st of L){const row=document.createElement('div');row.className='songrow';const b=document.createElement('b');b.textContent=st.name;const s=document.createElement('small');s.textContent='Probando…';row.append(b,s);box.appendChild(row);
+    const r=await probe(st.url,true);if(r==='ok'){delete np[st.url];s.textContent='✓ Suena, con sonido 2000';s.style.color='#2b7244';good++;continue}
+    const r2=await probe(st.url,false);if(r2==='ok'){np[st.url]=1;s.textContent='✓ Suena (sin ecualizador)';s.style.color='#2b7244';good++}
+    else{s.textContent=r2==='t'?'✗ No contestó':'✗ No carga ('+({e1:'cancelada',e2:'error de red',e3:'audio dañado',e4:'no responde'}[r2]||r2)+')';s.style.color='#b3261e'}}
+  save();toast(good?`${good} de ${L.length} emisoras suenan en este teléfono`:'Ninguna emisora cargó. Revisa tu internet',3600)}
 /* Spotify en vivo: el estéreo muestra lo que suena en tu app de Spotify (vía la conexión de Claude) */
 var SP={on:false,playing:false,none:false,track:'',artist:'',prog:0,dur:0,at:0,asked:false,mcp:null,unw:null,
   parse(p){const R={none:false,playing:false,track:'',artist:'',prog:0,dur:0};
@@ -2337,7 +2361,7 @@ setInterval(()=>{if(SP.playing&&!MUS.playing&&VIEW==='win'&&!document.hidden){if
 function lcd(a,b,ms){ms=ms||2600;$('#stL1').textContent=a;$('#stL2').textContent=b;volShowT=performance.now()+ms;clearTimeout(lcd.t);lcd.t=setTimeout(()=>{volShowT=0;stereoUI()},ms+50)}
 let volShowT=0;
 function stereoUI(){const l1=$('#stL1'),l2=$('#stL2'),pb=$('#stPlay'),list=MUS.list;
-  const anyP=MUS.playing||RADIO.playing||!!(SP&&SP.playing);const anyP2=anyP||RADIO.playing;$('#stLed').classList.toggle('on',anyP2);$('#stereo').classList.toggle('playing',anyP2);$('#stEq').classList.toggle('on',DB.eqClassic!==false);specRun();const pbOn=MUS.playing||RADIO.playing;pb.innerHTML=pbOn?ICON.pause:ICON.play;pb.setAttribute('aria-label',pbOn?'Pausa':'Reproducir');
+  const anyP=MUS.playing||RADIO.playing||!!(SP&&SP.playing);const anyP2=anyP||RADIO.playing;$('#stLed').classList.toggle('on',anyP2);$('#stereo').classList.toggle('playing',anyP2);$('#stEq').classList.toggle('on',(DB.eqMode||(DB.eqClassic===false?'normal':'clasico'))!=='normal');$('#stEq').textContent=DB.eqMode==='2000'?'2000':'EQ';specRun();const pbOn=MUS.playing||RADIO.playing;pb.innerHTML=pbOn?ICON.pause:ICON.play;pb.setAttribute('aria-label',pbOn?'Pausa':'Reproducir');
   $('#kcap').style.transform=`rotate(${(-135+270*(DB.vol??.6)).toFixed(1)}deg)`;$('#knob').setAttribute('aria-valuenow',String(Math.round((DB.vol??.6)*100)));
   if(performance.now()<volShowT)return;
   if(!MUS.playing&&(RADIO.playing||RADIO.loading)){l1.textContent='📻 '+RADIO.station.name;l2.textContent=RADIO.loading?'Sintonizando…':RADIO.station.tag;return}
@@ -2348,18 +2372,18 @@ function stereoUI(){const l1=$('#stL1'),l2=$('#stL2'),pb=$('#stPlay'),list=MUS.l
   const s=list[MUS.idx]||list[0],a=MUS.au,f=t=>isFinite(t)?`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`:'0:00';
   l1.textContent=`${MUS.idx+1}/${list.length} ${s.name}`;l2.textContent=`${MUS.playing?'▶':'❚❚'} ${f(a.currentTime)} / ${f(a.duration)}`}
 $('#stPlay').addEventListener('click',()=>{SFX.play('btn');MUS.bless();
-  if(RADIO.playing){RADIO.pause();return}
+  if(RADIO.playing||RADIO.loading){RADIO.pause();return}
   if(MUS.playing){MUS.toggle();return}
-  if(MUS.list.length&&DB.lastSource!=='radio'){MUS.toggle();return}
-  if(DB.radioIdx!=null||DB.lastSource==='radio'){RADIO.play();return}
+  if(DB.lastSource==='radio'){RADIO.play();return}
+  if(MUS.list.length){MUS.toggle();return}
   if(MUS.list.length){MUS.toggle();return}
   if(SP.on){SP.refresh(true);if(!SP.playing)showSongs();return}
   showSongs()});
-$('#stNext').addEventListener('click',()=>{SFX.play('btn');if(RADIO.playing)RADIO.next();else if(MUS.list.length)MUS.next()});
-$('#stPrev').addEventListener('click',()=>{SFX.play('btn');if(RADIO.playing)RADIO.prev();else if(MUS.list.length)MUS.prev()});
+$('#stNext').addEventListener('click',()=>{SFX.play('btn');if(RADIO.playing||RADIO.loading||(DB.lastSource==='radio'&&!MUS.playing))RADIO.next();else if(MUS.list.length)MUS.next()});
+$('#stPrev').addEventListener('click',()=>{SFX.play('btn');if(RADIO.playing||RADIO.loading||(DB.lastSource==='radio'&&!MUS.playing))RADIO.prev();else if(MUS.list.length)MUS.prev()});
 $('#stEject').addEventListener('click',()=>{SFX.play('btn');showSongs()});
-$('#stEq').addEventListener('click',()=>{SFX.play('btn');DB.eqClassic=DB.eqClassic===false;save();SFX.setEQ(DB.eqClassic);
-  $('#stL1').textContent='SONIDO';$('#stL2').textContent=DB.eqClassic?'CLÁSICO 2000':'ORIGINAL';volShowT=performance.now()+1500;stereoUI();setTimeout(()=>{volShowT=0;stereoUI()},1550)});
+$('#stEq').addEventListener('click',()=>{SFX.play('btn');const M=['normal','clasico','2000'],curM=M.includes(DB.eqMode)?DB.eqMode:(DB.eqClassic===false?'normal':'clasico'),nx=M[(M.indexOf(curM)+1)%3];DB.eqMode=nx;save();SFX.setEQ(nx);
+  lcd('SONIDO',{normal:'ORIGINAL',clasico:'CLÁSICO CÁLIDO',2000:'AÑOS 2000'}[nx]+(RADIO.playing&&!RADIO.processed?' (NO EN ESTA RADIO)':''),1600);stereoUI()});
 /* espectro real de la canción en la pantalla */
 let specRAF=0;const SPEC=new Uint8Array(128);
 function specRun(){const st=$('#stereo'),fake=!MUS.playing&&(RADIO.playing||!!(SP&&SP.playing)),
@@ -2391,18 +2415,41 @@ function spotifyBlock(l){
   l.appendChild(f)}
 function radioBlock(l){const w=document.createElement('div');w.className='nbform';
   const h=document.createElement('label');h.textContent='Radio por internet';w.appendChild(h);
-  STATIONS.forEach((st,i)=>{const r=document.createElement('div');r.className='songrow'+(i===RADIO.idx&&RADIO.playing?' now':'');
+  RADIO.list.forEach((st,i)=>{const r=document.createElement('div');r.className='songrow'+(i===RADIO.idx&&RADIO.playing?' now':'');
     const b=document.createElement('b');b.textContent=st.name+' — '+st.tag;
-    const pl=miniBtn(i===RADIO.idx&&RADIO.playing?'Sonando':(i===RADIO.idx&&RADIO.loading?'Sintonizando…':'Tocar'),()=>{closeAll();RADIO.play(i)});
-    r.append(b,pl);w.appendChild(r)});
-  const note=document.createElement('div');note.className='empty';note.style.marginTop='4px';note.textContent='Si una estación no carga, prueba otra: a veces se cae un ratito.';w.appendChild(note);
+    const pl=miniBtn(i===RADIO.idx&&RADIO.playing?'Sonando':(i===RADIO.idx&&RADIO.loading?'Sintonizando…':'Tocar'),()=>{closeAll();RADIO.play(i)});r.append(b,pl);
+    if(i>=STATIONS.length)r.appendChild(confirmBtn('Quitar',()=>{DB.stations=DB.stations.filter(x=>x.id!==st.id);if(RADIO.idx>=RADIO.list.length)DB.radioIdx=0;save();showSongs()}));
+    w.appendChild(r)});
+  const tb=document.createElement('div');tb.className='trow';const res=document.createElement('div');
+  tb.appendChild(miniBtn('Probar emisoras',()=>{testStations(res)}));w.appendChild(tb);w.appendChild(res);
+  const f=document.createElement('form');f.className='trow';f.innerHTML='<input class="popin" id="rbq" placeholder="Buscar: Mazatlán, Sinaloa, Los 40…" autocomplete="off" style="flex:1;margin:0"><button class="mini" type="submit">Buscar</button>';
+  const out=document.createElement('div');
+  f.addEventListener('submit',async e=>{e.preventDefault();const q=f.querySelector('input').value.trim();if(!q)return;f.querySelector('input').blur();out.innerHTML='<div class="empty">Buscando emisoras…</div>';
+    const rs=await rbSearch(q);out.innerHTML='';if(rs===null){out.innerHTML='<div class="empty">No se pudo buscar ahora. Revisa tu internet e intenta otra vez.</div>';return}
+    if(!rs.length){out.innerHTML='<div class="empty">No encontré emisoras con ese nombre que transmitan por internet.</div>';return}
+    for(const st of rs.slice(0,25)){const r=document.createElement('div');r.className='songrow';const b=document.createElement('b');b.textContent=st.name+' — '+st.tag;
+      const have=(DB.stations||[]).some(x=>x.url===st.url);
+      const add=miniBtn(have?'Guardada':'★ Guardar',()=>{DB.stations=Array.isArray(DB.stations)?DB.stations:[];if(DB.stations.some(x=>x.url===st.url))return;if(DB.stations.length>=20){toast('Ya tienes 20 emisoras guardadas');return}
+        DB.stations.push(st);save();add.textContent='Guardada';toast('Emisora guardada en tu radio',2200)});
+      const pl=miniBtn('Oír',()=>{DB.stations=Array.isArray(DB.stations)?DB.stations:[];let i=RADIO.list.findIndex(x=>x.url===st.url);if(i<0){if(DB.stations.length>=20){toast('Ya tienes 20 emisoras guardadas');return}DB.stations.push(st);save();i=RADIO.list.length-1}closeAll();RADIO.play(i)});
+      r.append(b,pl,add);out.appendChild(r)}});
+  w.appendChild(f);w.appendChild(out);
+  const g=document.createElement('form');g.className='trow';g.innerHTML='<input class="popin" placeholder="O pega el enlace de una emisora (https://…)" autocomplete="off" style="flex:1;margin:0"><button class="mini" type="submit">Agregar</button>';
+  g.addEventListener('submit',e=>{e.preventDefault();const u=g.querySelector('input').value.trim();if(!/^https:\/\/\S+$/i.test(u)){toast('El enlace debe empezar con https://',3200);return}
+    DB.stations=Array.isArray(DB.stations)?DB.stations:[];if(DB.stations.length>=20){toast('Ya tienes 20 emisoras guardadas');return}let nm='Mi emisora';try{nm=new URL(u).hostname.replace(/^www\./,'')}catch(_){}
+    DB.stations.push({id:uid(),name:nm,tag:'Agregada por ti',url:u});save();toast('Emisora agregada',2000);showSongs()});
+  w.appendChild(g);
+  const note=document.createElement('div');note.className='empty';note.style.marginTop='4px';note.textContent='Las emisoras marcadas «sin ecualizador» suenan normal; las demás pasan por el botón EQ del estéreo.';w.appendChild(note);
   l.appendChild(w)}
 function testBlock(l){const b=document.createElement('button');b.type='button';b.className='act';b.style.alignSelf='flex-start';b.textContent='🔊 Prueba de sonido';
   b.addEventListener('click',()=>{MUS.pause();RADIO.pause();const a=new Audio('prueba.wav');a.volume=Math.max(.3,Math.min(1,DB.vol??.6));lcd('PRUEBA','SONANDO…',4500);
     a.addEventListener('error',()=>{lcd('PRUEBA','NO SONÓ',4000);toast('La prueba no sonó (archivo bloqueado). Avísame',5200)});
     a.play().then(()=>toast('¿La escuchaste? Si sí, mándame tus canciones por el chat',5600)).catch(e=>{lcd('PRUEBA','NO SONÓ',4000);toast('La prueba no sonó ('+((e&&e.name)||'error')+'). Avísame',5600)})});
   l.appendChild(b)}
-async function showSongs(){const l=openPanel('Canciones del estéreo');await MUS.refresh();radioBlock(l);
+async function showSongs(){const l=openPanel('Canciones del estéreo');await MUS.refresh();
+  const fw=document.createElement('div');fw.className='mrow';fw.style.padding='0 0 4px';fw.innerHTML='<span>Fuente</span><div class="seg" role="radiogroup" aria-label="Fuente del estéreo"><button type="button" data-s="songs">Mis canciones</button><button type="button" data-s="radio">Radio</button></div>';
+  fw.querySelectorAll('button').forEach(b=>{const on=(DB.lastSource==='radio'?'radio':'songs')===b.dataset.s;b.classList.toggle('sel',on);b.addEventListener('click',()=>{if(b.dataset.s==='radio'){DB.lastSource='radio';if(MUS.playing)RADIO.play()}else{DB.lastSource='songs';if(RADIO.playing){RADIO.pause();if(MUS.list.length)MUS.play()}}save();showSongs()})});l.appendChild(fw);
+  radioBlock(l);
   const add=document.createElement('button');add.className='act';add.style.alignSelf='flex-start';add.textContent='＋ Agregar canciones';add.addEventListener('click',()=>$('#songFile').click());l.appendChild(add);
   if(!MUS.list.length){const e=document.createElement('div');e.className='empty';e.textContent='Elige archivos de música de tu teléfono (MP3, M4A, WAV, OGG, FLAC). Se quedan guardados en esta app y suenan desde el estéreo. ';l.appendChild(e);return}
   MUS.list.forEach((s,i)=>{const r=document.createElement('div');r.className='songrow'+(i===MUS.idx?' now':'');const b=document.createElement('b');b.textContent=s.name+(s.temp?' (sin guardar)':'');
@@ -2417,7 +2464,7 @@ $('#songFile').addEventListener('change',async e=>{const all=[...e.target.files]
 /* perilla de volumen: gira con el dedo, poquito a poquito, con su clic */
 (function(){const knob=$('#knob');let kd=null;
   const ang=()=>-135+270*(DB.vol??.6);
-  function setAng(a){const before=Math.floor((ang()+135)/9);a=Math.max(-135,Math.min(135,a));DB.vol=(a+135)/270;MUS.setVol();if(Math.floor((a+135)/9)!==before)SFX.play('detent');
+  function setAng(a){const before=Math.floor((ang()+135)/9);a=Math.max(-135,Math.min(135,a));DB.vol=(a+135)/270;MUS.setVol();RADIO.setVol();if(Math.floor((a+135)/9)!==before)SFX.play('detent');
     const n=Math.round(DB.vol*12);$('#stL1').textContent='VOLUMEN';$('#stL2').textContent='▮'.repeat(n)+'▯'.repeat(12-n)+' '+Math.round(DB.vol*100);volShowT=performance.now()+1200;stereoUI();
     clearTimeout(setAng.t);setAng.t=setTimeout(()=>{volShowT=0;stereoUI();save()},1250)}
   knob.addEventListener('pointerdown',e=>{e.preventDefault();try{knob.setPointerCapture(e.pointerId)}catch(_){}const r=knob.getBoundingClientRect();kd={cx:r.left+r.width/2,cy:r.top+r.height/2,last:Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))}});
