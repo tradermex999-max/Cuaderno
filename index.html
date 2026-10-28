@@ -108,8 +108,9 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
 .tool svg{display:block}
 .tool.sel .rot{transform:translateX(-14px)}
 .trow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:6px}
-.palette{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;padding:6px;border-radius:8px;background:rgba(255,255,255,.06)}
-.cp{border:0;background:none;padding:2px 3px;cursor:pointer;border-radius:5px;filter:drop-shadow(1px 2px 1px rgba(0,0,0,.5))}
+.palette{display:flex;flex-direction:column;gap:3px;margin-top:8px;padding:5px 4px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));max-width:100%;box-sizing:border-box}
+.prow{display:flex;gap:1px;overflow-x:auto;scrollbar-width:none}.prow+.prow{padding-top:3px;border-top:1px solid rgba(255,255,255,.1)}
+.cp{flex:0 0 auto;border:0;background:none;padding:2px 1px;cursor:pointer;border-radius:5px;filter:drop-shadow(1px 2px 1px rgba(0,0,0,.5))}
 .cp svg{display:block}
 .cp.sel{background:rgba(255,255,255,.22)}
 .cp:focus-visible{outline:2px solid #fff}
@@ -183,7 +184,7 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
 .nbform{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:#f3eee2;margin-bottom:6px}
 .nbform label{font-size:16px;color:var(--ui-mute)}
 .nbform input{font:20px var(--hand);padding:6px 10px;border-radius:8px;border:1px solid rgba(43,41,37,.3);background:#fff;color:var(--ui-fg);-webkit-user-select:text;user-select:text}
-.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw{display:grid;grid-template-columns:repeat(6,30px);gap:10px}
 .swb{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);cursor:pointer}
 .swb.sel{box-shadow:0 0 0 3px var(--ui-fg)}
 #toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translate(-50%,-160%);z-index:60;box-sizing:border-box;
@@ -213,7 +214,11 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
 #winOut{z-index:0}
 #rainOut{position:absolute;z-index:1;pointer-events:none}
 #boltFx{position:fixed;inset:0;pointer-events:none;z-index:31;opacity:0;visibility:hidden;mix-blend-mode:screen;background:radial-gradient(130% 85% at 72% -12%,rgba(214,226,255,.95),rgba(186,204,255,.4) 55%,rgba(186,204,255,.1))}
-body.raining #sunScr{opacity:.28}body.raining #sunMul{opacity:.5}
+body.raining:not([data-light=noche]) #sunScr{opacity:.28}body.raining:not([data-light=noche]) #sunMul{opacity:.5}
+#storm{position:fixed;inset:0;z-index:4;pointer-events:none;mix-blend-mode:multiply;opacity:0;transition:opacity 1.2s ease;background:rgb(150,156,182)}
+body.lamp-on #storm{background:radial-gradient(circle at var(--lx,50%) var(--ly,50%),#fff 0,#fff calc(var(--lr,300px)*.3),rgb(206,208,222) calc(var(--lr,300px)*.75),rgb(164,168,192) var(--lr,300px))}
+body.raining[data-light=noche] #storm{opacity:1}
+.sun{transition:opacity 1.2s ease}
 #winCv{z-index:2}
 #motes{z-index:2;pointer-events:none}
 #sashes{position:absolute;z-index:2;perspective:900px;cursor:pointer;--b:4px}
@@ -338,6 +343,7 @@ body.raining #sunScr{opacity:.28}body.raining #sunMul{opacity:.5}
 </div>
 <canvas class="sun" id="sunMul" hidden></canvas>
 <canvas class="sun" id="sunScr" hidden></canvas>
+<div id="storm"></div>
 <div id="vWin" class="view" hidden>
   <canvas class="scene" id="winOut"></canvas>
   <canvas id="rainOut" hidden></canvas>
@@ -412,8 +418,9 @@ const TOOLS={
   regla:{label:'Regla'},compas:{label:'Compás'},sacapuntas:{label:'Sacapuntas'}
 };
 const INKSET={lapiz:1,verde:1,azul:1,negra:1,roja:1,marcador:1,color:1},DULL={lapiz:1,verde:1,color:1};
-const PALETTE=[['Rojo','#d0312d'],['Naranja','#ef7d22'],['Amarillo','#f2c81f'],['Verde limón','#8cc63f'],['Verde','#2e8b47'],['Azul cielo','#3fa7e0'],['Azul','#2a4fbf'],['Morado','#6f3fb3'],['Rosa','#e85a9b'],['Café','#7a4b2a'],['Gris','#7d7f84'],['Negro','#24242a']];
-const COLORS=[['Azul','#1f4e9a'],['Rojo','#b3262c'],['Verde','#2b7244'],['Amarillo','#d9a91c'],['Morado','#5f3a86'],['Negro','#2a2a2e']];
+const PAL_BASE=[['Rojo','#d0312d','#e48885'],['Naranja','#ef7d22','#f6b47f'],['Amarillo','#f2c81f','#f7df7d'],['Verde limón','#8cc63f','#bcde90'],['Verde','#2e8b47','#86bc94'],['Turquesa','#1fa89a','#7dcdc4'],['Azul cielo','#3fa7e0','#90cced'],['Azul','#2a4fbf','#8399da'],['Azul marino','#1b2f6b','#7b86a9'],['Morado','#6f3fb3','#ab90d3'],['Lila','#a98bd6','#cdbce7'],['Rosa','#e85a9b','#f29fc5'],['Vino','#8a1f3d','#bb7d8e'],['Durazno','#f2a07b','#f7c8b2'],['Café','#7a4b2a','#b29783'],['Verde olivo','#6b7a2a','#a9b283'],['Gris','#7d7f84','#b4b5b8'],['Negro','#24242a','#4a4a52']];
+const PALETTE=[...PAL_BASE.map(p=>[p[0],p[1]]),...PAL_BASE.map(p=>[p[0]+(p[0]==='Negro'?' grafito':' claro'),p[2]])];
+const COLORS=[['Azul','#1f4e9a'],['Rojo','#b3262c'],['Verde','#2b7244'],['Amarillo','#d9a91c'],['Morado','#5f3a86'],['Negro','#2a2a2e'],['Azul claro','#7491c0'],['Rojo claro','#d0787c'],['Verde claro','#7ca88b'],['Amarillo claro','#e7ca72'],['Lila','#9c85b4'],['Gris','#7b7b7d']];
 const INTRO="Mi cuaderno\n\nToca el botón de arriba a la derecha para sacar tus útiles.\nPara voltear, deja el dedo medio segundo en la esquina\nde abajo a la derecha y desliza a la izquierda.\nEsquina de abajo a la izquierda: regresar.\nPara arrancar la hoja, jala hacia abajo desde\nla esquina de arriba, junto al espiral.\nPara separar un tema, deja el dedo 5 segundos en la orilla\nderecha, a la mitad de la hoja, y se dobla en triángulo. Para voltear un triángulo, deja el dedo\n1 segundo en su punta y desliza a la izquierda.\nDesliza hacia abajo desde arriba del cuaderno\npara el menú y la luz del cuarto.\nLa lámpara se prende con el botón de su base.\nCon dos dedos acercas y alejas el cuaderno.";
 
 /* ---------- datos ---------- */
@@ -442,6 +449,7 @@ const cur=()=>{const b=B();return b.pages[b.cur]};
 let saveT=null,warned=false;
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){if(!warned){warned=true;toast('No se pudo guardar en este teléfono')}}}
 function save(){clearTimeout(saveT);saveT=setTimeout(persist,250)}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(v=>{if(!v)return navigator.storage.persist()}).catch(()=>{})}catch(e){}
 
 /* ---------- sonidos: síntesis física, sin archivos ---------- */
 const SFX=(function(){
@@ -769,7 +777,7 @@ function drawLight(){
   const panes=[];for(const [a0,a1] of [[.04,.47],[.53,.96]])for(const [b0,b1] of [[.04,.47],[.53,.96]])panes.push([P(a0,b0),P(a1,b0),P(a1,b1),P(a0,b1)]);
   const path=(x,q)=>{x.beginPath();x.moveTo(q[0][0],q[0][1]);for(let i=1;i<4;i++)x.lineTo(q[i][0],q[i][1]);x.closePath()};
   const blur=Math.round(13*pr);let x=m.getContext('2d');const canFilter=typeof x.filter==='string';
-  const lc=lampCenter(),lr=Math.max(L.W,L.H)*.95,cx=lc[0]*pr,cy=lc[1]*pr;
+  const lc=lampCenter(),lr=Math.max(L.W,L.H)*.95,cx=lc[0]*pr,cy=lc[1]*pr;{const st=$('#storm').style;st.setProperty('--lx',lc[0]+'px');st.setProperty('--ly',lc[1]+'px');st.setProperty('--lr',lr+'px')}
   const fillAll=(c,st)=>{c.fillStyle=st;c.fillRect(0,0,c.canvas.width,c.canvas.height)};
   if(mode!=='dia'){
     if(mode==='tarde'){fillAll(x,'rgb(202,180,222)');
@@ -1016,8 +1024,8 @@ function sharpenerSVG(){const id='tsh';let s=`<defs>${grad(id+'b',[[0,'#173a8a']
   return flat(wrap(0,26,17,s))}
 function colorBoxSVG(){const id='tcb';let s=`<defs>${grad(id+'b',[[0,'#f4f1ea'],[1,'#d7d0c0']],true)}</defs>`;
   PALETTE.slice(0,8).forEach(([n,c],i)=>{const y=4+i*4.1;s+=`<path d="M12 ${y} L3 ${y+1.6} L12 ${y+3.2}Z" fill="#e9c69a"/><path d="M3 ${y+1.6} L5.6 ${y+.9} L5.6 ${y+2.3}Z" fill="${c}"/><rect x="12" y="${y}" width="12" height="3.2" fill="${c}"/>`});
-  s+=`<rect x="20" y="1" width="83" height="38" rx="2" fill="url(#${id}b)" stroke="#b8ae98" stroke-width=".4"/>`;PALETTE.forEach((p,i)=>{s+=`<rect x="${24+i*6.4}" y="27" width="6.4" height="7" fill="${p[1]}"/>`});
-  s+=`<text x="61" y="18" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="7" fill="#3a3326">12 COLORES</text>`;
+  s+=`<rect x="20" y="1" width="83" height="38" rx="2" fill="url(#${id}b)" stroke="#b8ae98" stroke-width=".4"/>`;PAL_BASE.forEach((p,i)=>{s+=`<rect x="${24+i*4.2}" y="27" width="4.2" height="3.5" fill="${p[1]}"/><rect x="${24+i*4.2}" y="30.5" width="4.2" height="3.5" fill="${p[2]}"/>`});
+  s+=`<text x="61" y="18" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="7" fill="#3a3326">36 COLORES</text>`;
   return flat(wrap(0,104,40,s))}
 const miniColorPencil=c=>`<svg width="12" height="52" viewBox="0 0 8 36" aria-hidden="true"><path d="M4 0 L5.2 4 H2.8Z" fill="${c}"/><path d="M2.8 4 H5.2 L7.4 11 H.6Z" fill="#e9c69a"/><path d="M.6 11 H7.4 V36 H.6Z" fill="${c}"/><rect x=".6" y="11" width="2" height="25" fill="#fff" opacity=".25"/></svg>`;
 function toolArtH(k){if(k==='regla')return flat(wrap(0,200,30,rulerInner()));if(k==='compas')return compassSVG();if(k==='sacapuntas')return sharpenerSVG();if(k==='color')return colorBoxSVG();if(k==='marcador')return horiz(markerSVG());return horiz(toolArt(k))}
@@ -1026,7 +1034,8 @@ function buildTools(){toolsEl.innerHTML='';
   for(const k of TRAY_ROWS)toolsEl.appendChild(mk(k));
   const row=document.createElement('div');row.className='trow';for(const k of TRAY_SMALL)row.appendChild(mk(k));toolsEl.appendChild(row);
   const pal=document.createElement('div');pal.className='palette';pal.id='palette';pal.hidden=true;
-  for(const [n,c] of PALETTE){const b=document.createElement('button');b.className='cp';b.dataset.c=c;b.setAttribute('aria-label','Lápiz de color '+n);b.title=n;b.innerHTML=miniColorPencil(c);b.addEventListener('click',()=>{DB.color=c;pickTool('color',n)});pal.appendChild(b)}
+  const floors=[document.createElement('div'),document.createElement('div')];floors.forEach((f,i)=>{f.className='prow';f.setAttribute('aria-label',i?'Tonos claros':'Tonos fuertes');pal.appendChild(f)});
+  PALETTE.forEach(([n,c],i)=>{const b=document.createElement('button');b.className='cp';b.dataset.c=c;b.setAttribute('aria-label','Lápiz de color '+n);b.title=n;b.innerHTML=miniColorPencil(c);b.addEventListener('click',()=>{DB.color=c;pickTool('color',n)});floors[i<PAL_BASE.length?0:1].appendChild(b)});
   toolsEl.appendChild(pal);markTool()}
 function markTool(){toolsEl.querySelectorAll('.tool').forEach(b=>b.classList.toggle('sel',b.dataset.t===DB.tool||(b.dataset.t==='regla'&&DB.ruler.on)));toolsEl.querySelectorAll('.cp').forEach(b=>b.classList.toggle('sel',DB.tool==='color'&&b.dataset.c===DB.color))}
 function sharpen(){const P=['lapiz','verde','color'],k=P.includes(DB.tool)?DB.tool:(P.includes(DB.lastPencil)?DB.lastPencil:'lapiz');
@@ -1570,19 +1579,22 @@ function pxPine(x,cx,base,h,cols,r,detail,sw,rim){if(h<4)return;sw=sw||0;const t
     if(rim&&r()<.75){x.fillStyle=rim.c;x.fillRect(rim.side>0?rr:l,yy,1,1)}}
   x.fillStyle=cols.tree[detail?2:1];x.fillRect(cx+Math.round(sw),top-1,1,2)}
 /* bosque en pixel art: un fondo fijo y 8 cuadros de animación (pinos meciéndose, pasto, hojas y agua) */
-function buildOutside(w,h,mode){const P=3,lw=Math.ceil(w/P),lh=Math.ceil(h/P),bg=document.createElement('canvas');bg.width=lw;bg.height=lh;const x=bg.getContext('2d'),r=rng(301);
+function buildOutside(w,h,mode,rain){const P=3,lw=Math.ceil(w/P),lh=Math.ceil(h/P),bg=document.createElement('canvas');bg.width=lw;bg.height=lh;const x=bg.getContext('2d'),r=rng(301);
   const PAL={dia:{sky:[[110,184,194],[156,210,212]],far:[104,160,166],mid:[86,138,143],fog:[132,190,194],tree:['#1d3029','#29443a','#3b5f4f'],farT:[[78,128,132],[64,112,116]],ground:['#3a2d20','#57412d','#6d5639','#3f5537'],gtop:'#4d6a44',grass:['#3f5537','#5b7a4a'],leaf:['#9a6a3a','#c49a4a'],rock:'#7b8282',water:['#5f99a2','#a5d1d4'],trunk:'#2a1e16'},
     tarde:{sky:[[20,24,64],[62,48,104],[140,74,116],[192,104,98],[212,144,100],[224,180,138]],far:[146,86,122],mid:[104,60,104],fog:[196,126,126],tree:['#1a1226','#291a36','#46304a'],farT:[[132,74,124],[104,60,106]],ground:['#2b1a28','#3e2634','#5c3a3e','#6a4a3a'],gtop:'#d8925a',grass:['#5c3a3e','#b97a50'],leaf:['#f0a24a','#d8603a'],rock:'#7a5a66',water:['#d6708c','#ffdca0'],trunk:'#170f1c',rim:'#d89a6c',ridge:[[222,166,126],[204,132,116]]},
     noche:{sky:[[6,10,28],[20,34,70]],far:[26,40,74],mid:[20,32,62],fog:[36,54,92],tree:['#060a10','#0b131d','#14212f'],farT:[[22,36,68],[18,30,58]],ground:['#08090e','#10141d','#181d2b','#0d1719'],gtop:'#141c2a',grass:['#0d1719','#1a2636'],leaf:['#1c2230','#262c3c'],rock:'#2a3040',water:['#253a66','#6a86c2'],trunk:'#07070a'}}[mode];
   const lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5],rgb=a=>`rgb(${a.map(Math.round).join(',')})`;
-  const id=x.createImageData(lw,lh),d=id.data,S=PAL.sky,span=mode==='tarde'?.56:.75;
+  const id=x.createImageData(lw,lh),d=id.data,S=rain?{dia:[[92,104,116],[128,138,146],[150,158,162]],tarde:[[44,40,58],[86,72,88],[122,100,104]],noche:[[5,7,12],[14,18,28],[22,26,38]]}[mode]:PAL.sky,span=rain?.6:mode==='tarde'?.56:.75;
   for(let j=0;j<lh;j++){const t=Math.min(1,j/(lh*span))*(S.length-1),i0=Math.min(S.length-2,Math.floor(t)),col=lerp(S[i0],S[i0+1],t-i0);
     for(let i=0;i<lw;i++){const th=(B4[(j%4)*4+(i%4)]/16-.5)*10,k=(j*lw+i)*4;for(let q=0;q<3;q++)d[k+q]=Math.round((col[q]+th)/8)*8;d[k+3]=255}}
   x.putImageData(id,0,0);
   const stars=[],sunX=Math.round(lw*.62),sunY=Math.round(lh*.4);
-  if(mode==='noche'){for(let i=0;i<70;i++){const sx=Math.floor(r()*lw),sy=Math.floor(r()*lh*.5),br=r()<.25;x.fillStyle=br?'#cfe0ff':'#8ea6d8';x.fillRect(sx,sy,1,1);if(br||r()<.3)stars.push([sx,sy])}
+  if(mode==='noche'&&!rain){for(let i=0;i<70;i++){const sx=Math.floor(r()*lw),sy=Math.floor(r()*lh*.5),br=r()<.25;x.fillStyle=br?'#cfe0ff':'#8ea6d8';x.fillRect(sx,sy,1,1);if(br||r()<.3)stars.push([sx,sy])}
     const mr=Math.round(Math.min(lw,lh)*.075),mx=Math.round(lw*.72),my=Math.round(lh*.16);x.fillStyle='rgba(120,150,210,.18)';x.beginPath();x.arc(mx,my,mr*2.2,0,6.283);x.fill();x.drawImage(moonImg(),mx-mr,my-mr,mr*2,mr*2)}
-  if(mode==='tarde'){
+  if(rain){const CC={dia:['#a7b0b6','#8c979e','#76828a','#68737b'],tarde:['#86707c','#6c5866','#56465a','#4a3c50'],noche:['#1e2432','#181d2a','#131722','#0f121b']}[mode];
+    for(let c=0;c<14;c++){const cx=Math.round((r()*1.3-.15)*lw),cy=Math.round(lh*(r()*.36-.02)),cw=Math.round(lw*(.25+r()*.45)),rows=4+Math.floor(r()*3);
+      for(let row=0;row<rows;row++){const inset=Math.round(cw*(.1+.09*Math.abs(row-rows/2))*(.7+r()*.6)),L=cx+inset+Math.round((r()-.5)*4),R=cx+cw-inset+Math.round((r()-.5)*4);x.fillStyle=CC[Math.min(3,Math.floor(row*4/rows))];x.fillRect(L,cy+row,R-L,1)}}}
+  if(mode==='tarde'&&!rain){
     for(let i=0;i<9;i++){const sx=Math.floor(r()*lw),sy=Math.floor(r()*lh*.16);x.fillStyle=i<3?'#e8e4ff':'#a8a2e0';x.fillRect(sx,sy,1,1);stars.push([sx,sy])}
     x.save();x.globalAlpha=.035;x.fillStyle='#f6dcb4';for(let k=0;k<11;k++){const a=-Math.PI*(.05+k*.085),a2=a-.035;x.beginPath();x.moveTo(sunX,sunY);x.lineTo(sunX+Math.cos(a)*lw*1.4,sunY+Math.sin(a)*lw*1.4);x.lineTo(sunX+Math.cos(a2)*lw*1.4,sunY+Math.sin(a2)*lw*1.4);x.closePath();x.fill()}x.restore();
     const sr=Math.round(Math.min(lw,lh)*.07);
@@ -1615,6 +1627,7 @@ function buildOutside(w,h,mode){const P=3,lw=Math.ceil(w/P),lh=Math.ceil(h/P),bg
     for(const T of trees){const sw=T.amp*Math.sin(k/8*6.283+T.ph),rim=PAL.rim?{c:PAL.rim,side:T.cx<sunX?1:-1}:null;pxPine(fx,T.cx,T.base,T.h,tc,rng(T.seed),true,sw,rim&&T.amp>1?rim:null)}
     for(const [tx,ty,th,tp,tcol] of tufts){const lean=Math.round(Math.sin(k/8*6.283+tp)*.9);fx.fillStyle=tcol;fx.fillRect(tx,ty,1,1);fx.fillRect(tx+lean,ty-1,1,1);if(th>1)fx.fillRect(tx+lean*2,ty-2,1,1)}
     for(const [lx,ly,lp,lc] of leaves){const q=(k+lp)%8,dx=q===0||q===1?1:q===2?2:0,dy=q===1?-1:0;fx.fillStyle=lc;fx.fillRect(lx+dx,ly+dy,1,1)}
+    if(rain){fx.globalCompositeOperation='multiply';fx.fillStyle={dia:'rgb(178,184,190)',tarde:'rgb(160,150,160)',noche:'rgb(120,124,140)'}[mode];fx.fillRect(0,0,lw,lh);fx.globalCompositeOperation='source-over'}
     frames.push(f)}
   const work=document.createElement('canvas');work.width=lw;work.height=lh;
   return{P,lw,lh,frames,stars,work,mode,sun:[sunX,sunY]}}
@@ -1710,7 +1723,7 @@ function credenza(x,G,r){const {W,H,shY,cTop,cBot}=G,L0=W*.02,R0=W*.98,canF=type
 let WINZ=null;
 /* el exterior, la habitación y la franja de luz se dibujan una vez y se guardan; al prender una luz solo se recalcula la capa de iluminación (a media resolución) */
 const OUTC={size:'',map:{}},ROOMC={key:'',cv:null,p:null},LIGHTC={lc:null,band:null,key:''};
-function outsideFor(ww,wh,mode){const sz=ww+'x'+wh;if(OUTC.size!==sz){OUTC.size=sz;OUTC.map={}}return OUTC.map[mode]||(OUTC.map[mode]=buildOutside(ww,wh,mode))}
+function outsideFor(ww,wh,mode){const sz=ww+'x'+wh,k=mode+(DB.rain?'-r':'');if(OUTC.size!==sz){OUTC.size=sz;OUTC.map={}}return OUTC.map[k]||(OUTC.map[k]=buildOutside(ww,wh,mode,!!DB.rain))}
 function roomBase(G,pr){const {W,H,wx,wy,ww,wh,shY}=G,key=W+'x'+H+'x'+pr;if(ROOMC.key===key)return ROOMC;
   const cv=ROOMC.cv||(ROOMC.cv=document.createElement('canvas'));cv.width=Math.round(W*pr);cv.height=Math.round(H*pr);const x=cv.getContext('2d');x.setTransform(pr,0,0,pr,0,0);const canF=typeof x.filter==='string',r=rng(91);
   slatWall(x,W,H,r);
@@ -1802,7 +1815,7 @@ $('#winCv').addEventListener('click',e=>{const Z2=WINZ;if(!Z2)return;const px=e.
 /* ---------- piso con el bote ---------- */
 function binGeo(){const W=VP.w,H=VP.h,rx=Math.min(W*.25,H*.155),ry=rx*.42;return{cx:W*.5,cy:H*.52,rx,ry,h:rx*1.45,rx2:rx*.86,ry2:ry*.86}}
 function ballSize(){return Math.round(Math.min(VP.w||400,VP.h||800)*.13)}
-function ballFilter(){const m=DB.light||'tarde';return m==='noche'?(DB.lamp?'brightness(.62)':'brightness(.42) saturate(.7)'):m==='tarde'?'brightness(.9) sepia(.15)':''}
+function ballFilter(){const m=DB.light||'tarde';return m==='noche'?(DB.rain?(DB.lamp?'brightness(.5)':'brightness(.3) saturate(.6)'):DB.lamp?'brightness(.62)':'brightness(.42) saturate(.7)'):m==='tarde'?'brightness(.9) sepia(.15)':''}
 function drawFloor(){if(!VP.w)return;VDIRTY.floor=false;const cv=$('#floorCv'),W=VP.w,H=VP.h,pr=Math.min(window.devicePixelRatio||1,2);
   cv.width=Math.round(W*pr);cv.height=Math.round(H*pr);const x=cv.getContext('2d');x.setTransform(pr,0,0,pr,0,0);const r=rng(33),mode=DB.light||'tarde';
   const pw=W/4.2;for(let i=0;i*pw<W;i++){const X=i*pw;x.fillStyle=`rgb(${78+r()*18|0},${47+r()*10|0},${28+r()*8|0})`;x.fillRect(X,0,pw,H);
@@ -1857,9 +1870,10 @@ function drawBinLayers(){if(!VP.w)return;const G=binGeo(),{cx,cy,rx,ry,h,rx2,ry2
   brass(x,G,0,.05);brass(x,G,.94,1);x.restore();
   rimB('#4a3414',6,0,Math.PI);rimB('#f4dc9a',2.2,Math.PI*.12,Math.PI*.88,.6);rimB('rgba(0,0,0,.45)',1,Math.PI*.1,Math.PI*.9,2.8)}
 function lightFloor(x,W,H,mode){x.save();
-  if(mode==='tarde'){x.globalCompositeOperation='multiply';x.fillStyle='rgb(228,196,170)';x.fillRect(0,0,W,H);x.globalCompositeOperation='screen';x.fillStyle='rgba(255,150,70,.2)';
+  const storm=!!DB.rain;
+  if(mode==='tarde'){x.globalCompositeOperation='multiply';x.fillStyle=storm?'rgb(196,180,176)':'rgb(228,196,170)';x.fillRect(0,0,W,H);x.globalCompositeOperation='screen';x.fillStyle=storm?'rgba(0,0,0,0)':'rgba(255,150,70,.2)';
     x.beginPath();x.moveTo(W*.55,H*.2);x.lineTo(W*1.1,H*.22);x.lineTo(W*1.1,H*.58);x.lineTo(W*.72,H*.52);x.closePath();x.fill()}
-  else if(mode==='noche'){x.globalCompositeOperation='multiply';x.fillStyle='rgb(56,64,102)';x.fillRect(0,0,W,H);x.globalCompositeOperation='screen';x.fillStyle='rgba(80,100,160,.15)';
+  else if(mode==='noche'){x.globalCompositeOperation='multiply';x.fillStyle=storm?'rgb(34,38,60)':'rgb(56,64,102)';x.fillRect(0,0,W,H);x.globalCompositeOperation='screen';x.fillStyle=storm?'rgba(0,0,0,0)':'rgba(80,100,160,.15)';
     x.beginPath();x.moveTo(W*.55,H*.2);x.lineTo(W*1.1,H*.22);x.lineTo(W*1.1,H*.58);x.lineTo(W*.72,H*.52);x.closePath();x.fill();
     if(DB.lamp){const g=x.createRadialGradient(W/2,0,10,W/2,0,H*.6);g.addColorStop(0,'rgba(255,240,215,.4)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,W,H)}}
   else{x.globalCompositeOperation='screen';x.fillStyle='rgba(255,252,240,.06)';x.fillRect(0,0,W,H)}
