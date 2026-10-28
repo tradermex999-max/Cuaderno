@@ -223,6 +223,32 @@ body.raining[data-light=noche] #storm{opacity:1}
 .sun{transition:opacity 1.2s ease}
 #winCv{z-index:2}
 #winFront{z-index:2;pointer-events:none}
+#vBoard{background:#2a1c12}
+#boardBg{z-index:0}
+#bStage{position:absolute;left:0;top:0;transform-origin:0 0;z-index:1;touch-action:none}
+#cartBg{position:absolute;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+#bSheets{position:absolute;inset:0}
+#boardInk{position:absolute;z-index:3;touch-action:none}
+#boardInk.hand{pointer-events:none}
+.bsheet{position:absolute;touch-action:none;cursor:grab;filter:drop-shadow(1px 4px 4px rgba(0,0,0,.35));transform-origin:50% 8%}
+.bsheet canvas{display:block;width:100%;height:100%;border-radius:1px}
+.bsheet .mag{position:absolute;left:50%;top:-5px;width:16px;height:16px;margin-left:-8px;border-radius:50%;box-shadow:0 2px 3px rgba(0,0,0,.45),inset 0 -2px 3px rgba(0,0,0,.3),inset 0 2px 2px rgba(255,255,255,.5)}
+.bsheet .quitar{position:absolute;left:50%;top:40%;transform:translateX(-50%);font:16px var(--label);border:0;border-radius:9px;padding:6px 12px;background:#b3261e;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+#bLight{position:absolute;inset:0;z-index:4;pointer-events:none;mix-blend-mode:multiply;transition:background-color 1.2s}
+#bTools{position:absolute;left:0;right:0;z-index:5;display:flex;justify-content:center;align-items:flex-end;gap:6px;pointer-events:none}
+#bTools button{pointer-events:auto;border:0;background:none;padding:0;cursor:pointer;transition:transform .2s;filter:drop-shadow(1px 3px 2px rgba(0,0,0,.5))}
+#bTools button.sel{transform:translateY(-9px)}
+#bTools svg{display:block}
+#bPal{position:absolute;left:12px;right:12px;z-index:5;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:4px;border-radius:10px;background:rgba(20,12,6,.45)}
+#bPal button{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.7);padding:0;cursor:pointer}
+#bPal button.sel{border-color:#fff;box-shadow:0 0 0 2px #2b2925}
+#bActs{position:absolute;left:0;right:0;z-index:5;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:0 12px}
+#bActs .act.sel{background:#2b2925;color:#fffaf0}
+#bTube{position:absolute;z-index:5;border:0;background:none;padding:0;cursor:pointer;filter:drop-shadow(2px 4px 3px rgba(0,0,0,.5))}
+#bTube svg{display:block}
+#mView button{font-size:14px}
+.cartgrid .cv canvas{height:118px}
+
 #sashes.persiana .sash{border-color:#4a2c16;background:linear-gradient(transparent calc(50% - var(--b)*.6),#4a2c16 calc(50% - var(--b)*.6),#4a2c16 calc(50% + var(--b)*.6),transparent calc(50% + var(--b)*.6)),linear-gradient(125deg,rgba(255,255,255,.08),rgba(255,255,255,0) 38%,rgba(255,255,255,.05) 52%,rgba(255,255,255,0) 64%),rgba(170,200,215,.05)}
 #motes{z-index:2;pointer-events:none}
 #sashes{position:absolute;z-index:2;perspective:900px;cursor:pointer;--b:4px}
@@ -368,6 +394,17 @@ body.raining[data-light=noche] #storm{opacity:1}
   <button class="vpull" aria-label="Menú del cuaderno"></button>
   <button class="goDesk up">⌃ Subir al escritorio</button>
 </div>
+<div id="vBoard" class="view" hidden>
+  <canvas class="scene" id="boardBg"></canvas>
+  <div id="bStage"><canvas id="cartBg" hidden></canvas><div id="bSheets"></div><canvas id="boardInk"></canvas></div>
+  <div id="bLight"></div>
+  <div id="bTools" aria-label="Plumones"></div>
+  <div id="bPal" hidden aria-label="Colores"></div>
+  <div id="bActs"></div>
+  <button id="bTube" aria-label="Mis cartulinas"></button>
+  <button class="vpull" aria-label="Menú del cuaderno"></button>
+  <button class="goDesk up">‹ Volver al escritorio</button>
+</div>
 <div id="deskBall" hidden></div>
 <div id="ruleOv" hidden></div>
 <svg id="compOv" hidden aria-hidden="true"></svg>
@@ -385,10 +422,11 @@ body.raining[data-light=noche] #storm{opacity:1}
 </div>
 <div id="menu" aria-label="Menú del cuaderno">
   <button class="mi" id="mClose"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M3.5 7h3M3.5 12h3M3.5 17h3"/></svg><span>Cerrar cuaderno</span></button>
+  <button class="mi" id="mHang"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21l2-4M16 21l-2-4"/><circle cx="12" cy="7.5" r="1.6"/></svg><span>Colgar hoja en el pizarrón</span></button>
   <button class="mi" id="mSwitch"><svg viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg><span>Cambiar de cuaderno</span></button>
   <button class="mi danger" id="mThrow"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Tirar cuaderno</span></button>
   <hr>
-  <div class="mrow"><span>Mirar</span><div class="seg" id="mView" role="radiogroup" aria-label="Mirar hacia"><button data-v="win" role="radio">Ventana</button><button data-v="desk" role="radio">Escritorio</button><button data-v="floor" role="radio">Bote</button></div></div>
+  <div class="mrow"><span>Mirar</span><div class="seg" id="mView" role="radiogroup" aria-label="Mirar hacia"><button data-v="win" role="radio">Ventana</button><button data-v="desk" role="radio">Escritorio</button><button data-v="floor" role="radio">Bote</button><button data-v="board" role="radio">Pizarrón</button></div></div>
   <div class="mrow"><span>Luz</span><div class="seg" id="mLight" role="radiogroup" aria-label="Luz del cuarto"><button data-l="dia" role="radio">Día</button><button data-l="tarde" role="radio">Atardecer</button><button data-l="noche" role="radio">Noche</button></div></div>
   <div class="mrow"><span>Ventana</span><div class="seg" id="mWin" role="radiogroup" aria-label="Diseño de ventana"><button data-w="clasica" role="radio">Clásica</button><button data-w="persiana" role="radio">Persianas</button></div></div>
   <div class="mrow"><span>Clima</span><div class="seg" id="mRain" role="radiogroup" aria-label="Clima"><button data-r="0" role="radio">Despejado</button><button data-r="1" role="radio">Lluvia</button></div></div>
@@ -422,7 +460,10 @@ const TOOLS={
   teclado:{label:'Teclado'},
   marcador:{label:'Marcador',w:8.5,color:'#141414',alpha:.9,marker:true},
   color:{label:'Colores',w:3.9,color:'#d0312d',alpha:.85,tex:true},
-  regla:{label:'Regla'},compas:{label:'Compás'},sacapuntas:{label:'Sacapuntas'}
+  regla:{label:'Regla'},compas:{label:'Compás'},sacapuntas:{label:'Sacapuntas'},
+  plumonN:{label:'Plumón negro',w:6.5,color:'#1c1d22',alpha:.93,marker:true,board:1},plumonA:{label:'Plumón azul',w:6.5,color:'#1f45b5',alpha:.93,marker:true,board:1},
+  plumonR:{label:'Plumón rojo',w:6.5,color:'#c8202a',alpha:.93,marker:true,board:1},plumonV:{label:'Plumón verde',w:6.5,color:'#1d8a46',alpha:.93,marker:true,board:1},
+  borradorP:{label:'Borrador',w:62,erase:true,board:1},crayon:{label:'Crayón',w:10,color:'#d0312d',alpha:.95,tex:true,board:1},marcadorG:{label:'Marcador grueso',w:15,color:'#d0312d',alpha:.82,board:1}
 };
 const INKSET={lapiz:1,verde:1,azul:1,negra:1,roja:1,marcador:1,color:1},DULL={lapiz:1,verde:1,color:1};
 const PAL_BASE=[['Rojo','#d0312d','#e48885'],['Naranja','#ef7d22','#f6b47f'],['Amarillo','#f2c81f','#f7df7d'],['Verde limón','#8cc63f','#bcde90'],['Verde','#2e8b47','#86bc94'],['Turquesa','#1fa89a','#7dcdc4'],['Azul cielo','#3fa7e0','#90cced'],['Azul','#2a4fbf','#8399da'],['Azul marino','#1b2f6b','#7b86a9'],['Morado','#6f3fb3','#ab90d3'],['Lila','#a98bd6','#cdbce7'],['Rosa','#e85a9b','#f29fc5'],['Vino','#8a1f3d','#bb7d8e'],['Durazno','#f2a07b','#f7c8b2'],['Café','#7a4b2a','#b29783'],['Verde olivo','#6b7a2a','#a9b283'],['Gris','#7d7f84','#b4b5b8'],['Negro','#24242a','#4a4a52']];
@@ -715,7 +756,7 @@ const SFX=(function(){
     src.connect(hp);hp.connect(ls);ls.connect(pk);pk.connect(hs);hs.connect(ws);ws.connect(cp);cp.connect(out);cp.connect(rv);rv.connect(wet);wet.connect(out);out.connect(an);an.connect(c.destination);
     mch={ls,pk,hs,wet,an};setEQ(DB.eqClassic!==false);return mch}catch(e){return null}}
 
-  const SCR={lapiz:{k:'graf',v:.34},verde:{k:'soft',v:.38},azul:{k:'ball',v:.15},negra:{k:'ball',v:.15},roja:{k:'ball',v:.15},borrador:{k:'rub',v:.42},corrector:{k:'liq',v:.16},marcador:{k:'felt',v:.2},color:{k:'graf',v:.3}};
+  const SCR={lapiz:{k:'graf',v:.34},verde:{k:'soft',v:.38},azul:{k:'ball',v:.15},negra:{k:'ball',v:.15},roja:{k:'ball',v:.15},borrador:{k:'rub',v:.42},corrector:{k:'liq',v:.16},marcador:{k:'felt',v:.2},color:{k:'graf',v:.3},plumonN:{k:'felt',v:.3},plumonA:{k:'felt',v:.3},plumonR:{k:'felt',v:.3},plumonV:{k:'felt',v:.3},borradorP:{k:'rub',v:.3},crayon:{k:'soft',v:.45},marcadorG:{k:'felt',v:.26}};
   function scratchBurst(k,ms){if(!on()||!SCR[k])return;const c=SCR[k],src=ctx.createBufferSource();src.buffer=loop(c.k);src.loop=true;const g=ctx.createGain();g.gain.value=0;src.connect(g);g.connect(master);const t=ctx.currentTime;src.start(t,Math.random()*2);g.gain.setTargetAtTime(c.v*.8,t,.03);g.gain.setTargetAtTime(0,t+ms/1000,.05);src.stop(t+ms/1000+.4)}
   let sc=null;
   function scratchStart(k){scratchStop();if(!on()||!SCR[k])return;const c=SCR[k],src=ctx.createBufferSource();src.buffer=loop(c.k);src.loop=true;src.playbackRate.value=.9;
@@ -771,7 +812,7 @@ function lampCenter(){const r=$('#app').getBoundingClientRect();return[r.left+L.
 /* dibuja por adelantado, en tiempo libre, las vistas que quedaron pendientes para que cambiar de vista no arranque con un redibujado pesado */
 function prewarm(){clearTimeout(prewarm.t);const run=()=>{if(!VP.w||!L.W)return;if(VDIRTY.win&&VIEW!=='win')drawWin();else if(VDIRTY.floor&&VIEW!=='floor')drawFloor();if((VDIRTY.win&&VIEW!=='win')||(VDIRTY.floor&&VIEW!=='floor'))prewarm()};
   prewarm.t=setTimeout(()=>{if(window.requestIdleCallback)requestIdleCallback(run,{timeout:1500});else run()},250)}
-function drawLight(){
+function drawLight(){boardLight();
   const mode=DB.light||'tarde',lamp=!!DB.lamp,m=$('#sunMul'),s=$('#sunScr'),lb=$('#lamp');
   document.body.dataset.light=mode;document.body.classList.toggle('lamp-on',lamp);
   lb.classList.toggle('on',lamp);lb.setAttribute('aria-label',lamp?'Apagar lámpara':'Encender lámpara');
@@ -1513,18 +1554,149 @@ function drawCompass(ov,cx,cy,px,py){const dx=px-cx,dy=py-cy,len=Math.hypot(dx,d
   ov.innerHTML=leg(cx,cy,hx,hy)+leg(px,py,hx,hy)+`<circle cx="${cx}" cy="${cy}" r="2.2" fill="#202226"/><circle cx="${px}" cy="${py}" r="2.4" fill="#3a3a3e"/><rect x="${hx-3.5}" y="${hy-16}" width="7" height="14" rx="2" fill="#2b2f36"/><circle cx="${hx}" cy="${hy}" r="7" fill="#9aa0a7" stroke="#55595f" stroke-width="1"/><circle cx="${hx-2}" cy="${hy-2}" r="2.5" fill="#eef0f2" opacity=".7"/>`}
 
 /* ---------- vistas: ventana, escritorio y bote ---------- */
-let VIEW='desk';const VORDER={win:-1,desk:0,floor:1},VDIRTY={win:true,floor:true};
+let VIEW='desk';const VORDER={win:-1,desk:0,floor:1,board:2},VDIRTY={win:true,floor:true};
 function setView(to,cb){if(to===VIEW){cb&&cb();return}closeAll();$('#stereo').classList.remove('zoom');$('#stScrim').classList.remove('on');TOP.txt.blur();SFX.scratchStop();
-  const from=VIEW;VIEW=to;const H=innerHeight,E={desk:[$('#bg'),$('#app'),$('#sunMul'),$('#sunScr')],win:[$('#vWin')],floor:[$('#vFloor')]};
-  $('#vWin').hidden=!(to==='win'||from==='win');$('#vFloor').hidden=!(to==='floor'||from==='floor');
+  const from=VIEW;VIEW=to;const H=innerHeight,E={desk:[$('#bg'),$('#app'),$('#sunMul'),$('#sunScr'),$('#storm')],win:[$('#vWin')],floor:[$('#vFloor')],board:[$('#vBoard')]};
+  $('#vWin').hidden=!(to==='win'||from==='win');$('#vFloor').hidden=!(to==='floor'||from==='floor');$('#vBoard').hidden=!(to==='board'||from==='board');if(to==='board')renderBoard();if(from==='board')BRD.stopDraw();
   if(to!=='win')stopWinAnim();setTimeout(specRun,900);
   if(to==='win'){if(VDIRTY.win)drawWin();else{stereoPos();startWinAnim()}stereoUI()}
   if(to==='floor'){if(VDIRTY.floor)drawFloor();renderBalls()}
-  const put=(anim,ref)=>{for(const k in E)for(const el of E[k]){el.style.transition=anim?'transform .85s cubic-bezier(.65,0,.35,1)':'none';el.style.willChange=anim?'transform':'';const n=VORDER[k]-VORDER[ref];el.style.transform=n?`translateY(${n*H}px)`:''}};
+  const put=(anim,ref)=>{for(const k in E)for(const el of E[k]){el.style.transition=anim?'transform .85s cubic-bezier(.65,0,.35,1)':'none';el.style.willChange=anim?'transform':'';let tr='';if(k!==ref){if(k==='board')tr=`translateX(${innerWidth}px)`;else if(ref==='board')tr=`translateX(${-innerWidth}px)`;else{const n=VORDER[k]-VORDER[ref];tr=n?`translateY(${n*H}px)`:''}}el.style.transform=tr}};
   put(false,from);document.body.offsetWidth;put(true,to);updateTab();SFX.play('rustle');
-  clearTimeout(setView.t);setView.t=setTimeout(()=>{for(const k in E)for(const el of E[k])el.style.willChange='';if(VIEW!=='win')$('#vWin').hidden=true;if(VIEW!=='floor')$('#vFloor').hidden=true;cb&&cb()},880)}
+  clearTimeout(setView.t);setView.t=setTimeout(()=>{for(const k in E)for(const el of E[k])el.style.willChange='';if(VIEW!=='win')$('#vWin').hidden=true;if(VIEW!=='floor')$('#vFloor').hidden=true;if(VIEW!=='board')$('#vBoard').hidden=true;cb&&cb()},880)}
 document.querySelectorAll('.goDesk').forEach(b=>b.addEventListener('click',()=>setView('desk')));
 document.querySelectorAll('.vpull').forEach(b=>b.addEventListener('click',openMenu));
+
+/* ---------- pizarrón blanco: hojas colgadas con imán, plumones, borrador y cartulinas ---------- */
+const CART_COLORS=[['Blanca','#f7f5ee'],['Amarilla','#f3d65a'],['Azul cielo','#8ec5e8'],['Rosa','#f2a6c4'],['Verde menta','#a8dcc0'],['Negra','#26262a']];
+const MAGNETS=['#d8402f','#2f6fd8','#f2b632','#2f9a5a','#8a4fc8','#e8e8e8'];
+const BRD={g:null,z:1,zx:0,zy:0,ptrs:new Map(),pinch:null,draw:null,drag:null,cap:1,
+  stopDraw(){if(BRD.draw){BRD.draw=null;SFX.scratchStop()}BRD.drag=null;BRD.ptrs.clear();BRD.pinch=null}};
+function brdData(){if(!DB.board||!Array.isArray(DB.board.strokes))DB.board={strokes:[],sheets:[]};if(!Array.isArray(DB.board.sheets))DB.board.sheets=[];if(!Array.isArray(DB.cartulinas))DB.cartulinas=[];return DB.board}
+function cartActive(){const id=DB.cartOn;return id?(DB.cartulinas||[]).find(c=>c.id===id)||null:null}
+function boardTarget(){const c=cartActive();return c?c:brdData()}
+function boardTool(){const c=cartActive(),k=c?DB.cartTool:DB.boardTool,ok=c?['crayon','marcadorG','color','borradorP','mano']:['plumonN','plumonA','plumonR','plumonV','borradorP','mano'];return ok.includes(k)?k:ok[0]}
+function boardGeo(){const W=VP.w||innerWidth,H=VP.h||innerHeight,bx=Math.round(W*.045),by=Math.round(Math.max(78,H*.09)),bw=Math.round(W*.91),bh=Math.round(H*.6);
+  let tg={x:0,y:0,w:bw,h:bh};const c=cartActive();
+  if(c){const m=bw*.035;let cw=bw-m*2,ch=cw*1.4;if(ch>bh-m*2){ch=bh-m*2;cw=ch/1.4}tg={x:Math.round((bw-cw)/2),y:Math.round((bh-ch)/2),w:Math.round(cw),h:Math.round(ch)}}
+  return{W,H,bx,by,bw,bh,tray:by+bh,tg,cart:c}}
+/* luz del cuarto sobre el pizarrón (no toca BRD: se llama desde drawLight durante el arranque) */
+function boardLight(){const el=document.getElementById('bLight');if(!el)return;const m=DB.light||'tarde',rain=!!DB.rain;
+  el.style.backgroundColor=m==='dia'?(rain?'rgb(214,218,224)':'rgb(255,255,255)'):m==='tarde'?(rain?'rgb(200,186,184)':'rgb(244,214,188)'):(DB.lamp||DB.lamp2||DB.shelfLamp)?(rain?'rgb(150,140,140)':'rgb(176,164,160)'):(rain?'rgb(64,68,96)':'rgb(92,100,138)')}
+function drawBoardBg(){const G=boardGeo(),cv=$('#boardBg'),pr=Math.min(window.devicePixelRatio||1,2),{W,H,bx,by,bw,bh}=G;cv.width=Math.round(W*pr);cv.height=Math.round(H*pr);const x=cv.getContext('2d');x.setTransform(pr,0,0,pr,0,0);
+  const r=rng(515);if(DB.winStyle==='persiana')plasterWall(x,W,H,r);else slatWall(x,W,H,r);
+  const fr=Math.max(6,W*.018);
+  x.save();x.shadowColor='rgba(0,0,0,.55)';x.shadowBlur=16;x.shadowOffsetY=8;x.fillStyle='#9aa0a6';x.fillRect(bx-fr,by-fr,bw+fr*2,bh+fr*2);x.restore();
+  const al=(X,Y,w,h,v)=>{const g=v?x.createLinearGradient(X,0,X+w,0):x.createLinearGradient(0,Y,0,Y+h);g.addColorStop(0,'#f2f4f6');g.addColorStop(.4,'#b9bec4');g.addColorStop(.7,'#d9dde1');g.addColorStop(1,'#7c8288');x.fillStyle=g;x.fillRect(X,Y,w,h)};
+  al(bx-fr,by-fr,bw+fr*2,fr,0);al(bx-fr,by+bh,bw+fr*2,fr,0);al(bx-fr,by-fr,fr,bh+fr*2,1);al(bx+bw,by-fr,fr,bh+fr*2,1);
+  let g=x.createLinearGradient(bx,by,bx+bw,by+bh);g.addColorStop(0,'#fbfcfb');g.addColorStop(.55,'#eef0ee');g.addColorStop(1,'#dfe2e0');x.fillStyle=g;x.fillRect(bx,by,bw,bh);
+  x.save();x.beginPath();x.rect(bx,by,bw,bh);x.clip();x.globalAlpha=.035;x.strokeStyle='#33363a';x.lineCap='round';
+  for(let i=0;i<14;i++){let px=bx+r()*bw,py=by+r()*bh;x.lineWidth=1+r()*5;x.beginPath();x.moveTo(px,py);for(let k=0;k<5;k++){px+=(r()-.5)*bw*.18;py+=(r()-.5)*bh*.06;x.lineTo(px,py)}x.stroke()}
+  x.globalAlpha=1;g=x.createLinearGradient(bx,by,bx+bw*.8,by+bh);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.42,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.5)');g.addColorStop(.58,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(bx,by,bw,bh);x.restore();
+  const ty=by+bh+fr,th=Math.max(12,H*.026);g=x.createLinearGradient(0,ty,0,ty+th);g.addColorStop(0,'#8a9096');g.addColorStop(.25,'#eef1f3');g.addColorStop(.6,'#a7adb3');g.addColorStop(1,'#5b6167');x.fillStyle=g;x.fillRect(bx-fr*1.5,ty,bw+fr*3,th);
+  x.fillStyle='rgba(0,0,0,.35)';x.fillRect(bx-fr*1.5,ty+th,bw+fr*3,2);
+  G.trayY=ty;G.trayH=th;BRD.g=G;return G}
+function drawCartBg(){const G=BRD.g,c=G.cart,cv=$('#cartBg');if(!c){cv.hidden=true;return}cv.hidden=false;const pr=Math.min(window.devicePixelRatio||1,2),{tg}=G;
+  Object.assign(cv.style,{left:tg.x+'px',top:tg.y+'px',width:tg.w+'px',height:tg.h+'px'});cv.width=Math.round(tg.w*pr);cv.height=Math.round(tg.h*pr);const x=cv.getContext('2d');x.setTransform(pr,0,0,pr,0,0);
+  const r=rng(c.id.split('').reduce((a,ch)=>a+ch.charCodeAt(0),3));x.fillStyle=c.color;x.fillRect(0,0,tg.w,tg.h);
+  mottle(x,tg.w,tg.h,r,[[30,.05],[6,.05],[2,.05]],[0,0,0],[255,255,255]);
+  x.globalAlpha=.12;for(let i=0,n=tg.w*tg.h/90;i<n;i++){x.fillStyle=r()<.5?'#000':'#fff';x.fillRect(r()*tg.w,r()*tg.h,1,1)}x.globalAlpha=1;
+  const tape=(cx,cy,a)=>{x.save();x.translate(cx,cy);x.rotate(a);x.fillStyle='rgba(236,226,196,.78)';x.fillRect(-tg.w*.07,-tg.w*.022,tg.w*.14,tg.w*.044);x.fillStyle='rgba(255,255,255,.25)';x.fillRect(-tg.w*.07,-tg.w*.022,tg.w*.14,tg.w*.01);x.restore()};
+  tape(4,4,-.75);tape(tg.w-4,4,.75);tape(4,tg.h-4,.75);tape(tg.w-4,tg.h-4,-.75)}
+function boardInkRes(){const G=BRD.g,{tg}=G,cv=$('#boardInk'),pr=Math.min(window.devicePixelRatio||1,2),cap=Math.sqrt(6e6/(tg.w*tg.h)),s=Math.min(pr*Math.max(1,BRD.z),cap);
+  Object.assign(cv.style,{left:tg.x+'px',top:tg.y+'px',width:tg.w+'px',height:tg.h+'px'});cv.width=Math.round(tg.w*s);cv.height=Math.round(tg.h*s);BRD.cap=s}
+function drawBoardInk(){const cv=$('#boardInk'),x=cv.getContext('2d'),k=cv.width/1000;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cv.width,cv.height);x.setTransform(k,0,0,k,0,0);const dl=DL;DL=0;for(const s of boardTarget().strokes)drawStroke(x,s,k);DL=dl}
+/* hoja colgada: misma hoja del cuaderno (papel, texto y trazos) */
+function pageCanvas(sh,w){const h=Math.round(w*275/210),pr=Math.min(window.devicePixelRatio||1,2),c=document.createElement('canvas');c.width=Math.round(w*pr);c.height=Math.round(h*pr);const x=c.getContext('2d');
+  const P=L.papers?paperOf(sh.kind):null;if(P)x.drawImage(P,0,0,c.width,c.height);else{x.fillStyle='#fbfaf2';x.fillRect(0,0,c.width,c.height)}
+  if(sh.text){const lh=c.height/33.5,top=lh*3.1,ml=c.width*.13+c.width*.012,maxW=c.width-ml-c.width*.03;x.fillStyle='#1f2c62';x.font=`${lh*.64}px Kalam,cursive`;x.textBaseline='alphabetic';let row=0;
+    for(const para of sh.text.split('\n')){let line='';const words=para.split(' ');for(const wd of words){const t=line?line+' '+wd:wd;if(x.measureText(t).width>maxW&&line){x.fillText(line,ml,top+lh*(row+.86));row++;line=wd}else line=t}x.fillText(line,ml,top+lh*(row+.86));row++;if(row>40)break}}
+  const s=c.width/1000;x.setTransform(s,0,0,s,0,0);const dl=DL;DL=0;for(const st of sh.strokes||[])drawStroke(x,st,s);DL=dl;return c}
+function renderSheets(){const G=BRD.g,box=$('#bSheets'),bd=brdData();box.innerHTML='';box.hidden=!!G.cart;if(G.cart)return;const sw=Math.round(G.bw*.27),shh=Math.round(sw*275/210);
+  for(const s of bd.sheets.slice().sort((a,b)=>a.z-b.z)){const d=document.createElement('div');d.className='bsheet';d.dataset.id=s.id;
+    Object.assign(d.style,{width:sw+'px',height:shh+'px',left:(s.x/1000*G.bw-sw/2)+'px',top:(s.y/1000*G.bw-shh*.08)+'px',transform:`rotate(${s.a}deg)`,zIndex:s.z});
+    d.appendChild(pageCanvas(s,sw));const m=document.createElement('i');m.className='mag';m.style.background=`radial-gradient(circle at 40% 35%,#fff8 0 2px,${s.m} 5px,${s.m})`;d.appendChild(m);box.appendChild(d)}}
+function stageXf(){const st=$('#bStage'),G=BRD.g;Object.assign(st.style,{left:G.bx+'px',top:G.by+'px',width:G.bw+'px',height:G.bh+'px',transform:`translate(${BRD.zx}px,${BRD.zy}px) scale(${BRD.z})`})}
+const bd_plumonSVG=(c,cap)=>`<svg width="64" height="15" viewBox="0 0 78 18" aria-hidden="true"><defs><linearGradient id="pb${c.slice(1)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#e8e8e8"/><stop offset="1" stop-color="#a8a8a8"/></linearGradient></defs><rect x="2" y="3" width="54" height="12" rx="3" fill="url(#pb${c.slice(1)})"/><rect x="8" y="5.5" width="26" height="7" rx="1" fill="${c}" opacity=".85"/><rect x="54" y="2" width="20" height="14" rx="4" fill="${cap}"/><rect x="56" y="4" width="16" height="3" rx="1.5" fill="#fff" opacity=".3"/><rect x="2" y="3" width="54" height="3" rx="1.5" fill="#fff" opacity=".5"/></svg>`;
+const bd_eraserSVG=()=>`<svg width="50" height="19" viewBox="0 0 58 22" aria-hidden="true"><rect x="1" y="2" width="56" height="12" rx="3" fill="#2f3440"/><rect x="1" y="2" width="56" height="4" rx="2" fill="#fff" opacity=".18"/><rect x="2" y="14" width="54" height="6" rx="1" fill="#e9e3d6"/><text x="29" y="11" text-anchor="middle" font-family="Arial" font-size="6" font-weight="700" fill="#cfd4dc">BORRADOR</text></svg>`;
+const bd_crayonSVG=c=>`<svg width="56" height="14" viewBox="0 0 64 16" aria-hidden="true"><path d="M2 8 L10 3 H58 V13 H10Z" fill="${c}"/><rect x="16" y="3" width="34" height="10" fill="#000" opacity=".18"/><rect x="18" y="5" width="30" height="6" fill="#fff" opacity=".22"/><rect x="10" y="3" width="48" height="2.5" fill="#fff" opacity=".35"/></svg>`;
+const bd_bigMarkerSVG=c=>`<svg width="62" height="17" viewBox="0 0 74 20" aria-hidden="true"><path d="M1 10 L7 5 H12 V15 H7Z" fill="${c}"/><rect x="12" y="3" width="44" height="14" rx="3" fill="#2a2a30"/><rect x="18" y="6" width="24" height="8" fill="${c}"/><rect x="56" y="2" width="16" height="16" rx="4" fill="${c}"/><rect x="12" y="3" width="44" height="4" rx="2" fill="#fff" opacity=".2"/></svg>`;
+const bd_pencilSVG=c=>`<svg width="60" height="10" viewBox="0 0 70 12" aria-hidden="true"><path d="M1 6 L9 2 H68 V10 H9Z" fill="#e9c69a"/><path d="M1 6 L4.5 4.2 V7.8Z" fill="${c}"/><rect x="9" y="2" width="59" height="8" fill="${c}"/><rect x="9" y="2" width="59" height="2.5" fill="#fff" opacity=".3"/></svg>`;
+const bd_handSVG=()=>`<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V5.5a1.5 1.5 0 0 1 3 0V10m0-5.5V4a1.5 1.5 0 0 1 3 0v6m0-5a1.5 1.5 0 0 1 3 0v5m0-3a1.5 1.5 0 0 1 3 0v6c0 4-2.5 7-6.5 7-3 0-4.5-1.5-6-4l-2.6-4.4a1.5 1.5 0 0 1 2.5-1.6L7 13" fill="#f4efe3" stroke="#2b2925" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+const bd_tubeSVG=()=>`<svg width="46" height="96" viewBox="0 0 46 96" aria-hidden="true"><rect x="9" y="2" width="9" height="30" rx="2" fill="#f3d65a" transform="rotate(-8 13 17)"/><rect x="18" y="0" width="9" height="30" rx="2" fill="#8ec5e8"/><rect x="27" y="3" width="9" height="30" rx="2" fill="#f2a6c4" transform="rotate(8 31 18)"/><rect x="6" y="20" width="34" height="74" rx="5" fill="#a8743e"/><rect x="6" y="20" width="34" height="74" rx="5" fill="url(#tg)"/><defs><linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".35" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient></defs><ellipse cx="23" cy="21" rx="17" ry="4" fill="#4a3018"/><rect x="6" y="52" width="34" height="9" fill="#7a5226"/></svg>`;
+function buildBoardUI(){const G=BRD.g,c=G.cart,tools=$('#bTools'),k=boardTool();tools.innerHTML='';tools.style.top=(G.trayY-12)+'px';
+  const list=c?[['crayon',bd_crayonSVG(DB.cartColor||PALETTE[0][1])],['marcadorG',bd_bigMarkerSVG(DB.cartColor||PALETTE[0][1])],['color',bd_pencilSVG(DB.cartColor||PALETTE[0][1])],['borradorP',bd_eraserSVG()]]
+    :[['plumonN',bd_plumonSVG('#1c1d22','#1c1d22')],['plumonA',bd_plumonSVG('#1f45b5','#1f45b5')],['plumonR',bd_plumonSVG('#c8202a','#c8202a')],['plumonV',bd_plumonSVG('#1d8a46','#1d8a46')],['borradorP',bd_eraserSVG()]];
+  const narrow=G.W<380;for(const [t,svg] of list){const b=document.createElement('button');b.innerHTML=svg;b.setAttribute('aria-label',t==='color'?'Lápiz de color':TOOLS[t].label);if(narrow)b.style.transform+=' scale(.86)';b.classList.toggle('sel',k===t);b.addEventListener('click',()=>pickBoardTool(t));tools.appendChild(b)}
+  const pal=$('#bPal');pal.hidden=!c;if(c){pal.innerHTML='';pal.style.top=(G.trayY+G.trayH+10)+'px';const cur=DB.cartColor||PALETTE[0][1];
+    for(const [n,col] of PALETTE){const b=document.createElement('button');b.style.background=col;b.title=n;b.setAttribute('aria-label',n);b.classList.toggle('sel',col===cur);b.addEventListener('click',()=>{DB.cartColor=col;save();if(boardTool()==='borradorP'||boardTool()==='mano')DB.cartTool='crayon';buildBoardUI();SFX.play('tick')});pal.appendChild(b)}}
+  const acts=$('#bActs');acts.innerHTML='';acts.style.top=(G.trayY+G.trayH+(c?52:16))+'px';
+  const A=(label,fn,sel)=>{const b=document.createElement('button');b.className='act'+(sel?' sel':'');b.textContent=label;b.addEventListener('click',fn);acts.appendChild(b);return b};
+  A('✋ Mano',()=>pickBoardTool('mano'),k==='mano');
+  A('↶ Deshacer',()=>{const T=boardTarget();if(T.strokes.length){T.strokes.pop();save();drawBoardInk();SFX.play('tick')}else toast('Nada que deshacer')});
+  let armed=0;const clr=A(c?'Borrar dibujo':'Borrar todo',()=>{if(!armed){armed=setTimeout(()=>{armed=0;clr.textContent=c?'Borrar dibujo':'Borrar todo'},3000);clr.textContent='¿Seguro?';return}clearTimeout(armed);armed=0;
+    const T=boardTarget();T.strokes=[];save();drawBoardInk();SFX.play('rub');clr.textContent=c?'Borrar dibujo':'Borrar todo'});
+  if(c)A('Quitar cartulina',()=>{DB.cartOn=null;save();SFX.play('rustle');renderBoard()});
+  const tb=$('#bTube');tb.innerHTML=bd_tubeSVG();Object.assign(tb.style,{left:(G.W-58)+'px',top:(G.trayY+G.trayH+(c?48:8))+'px'});tb.hidden=false;
+  $('#boardInk').classList.toggle('hand',k==='mano')}
+function pickBoardTool(t){if(cartActive())DB.cartTool=t;else DB.boardTool=t;save();SFX.play('pick',t==='borradorP'?'borrador':'marcador');buildBoardUI()}
+function renderBoard(){if(!VP.w)return;drawBoardBg();boardLight();BRD.z=1;BRD.zx=BRD.zy=0;stageXf();drawCartBg();boardInkRes();drawBoardInk();renderSheets();buildBoardUI()}
+/* dibujar */
+function bPoint(e){const cv=$('#boardInk'),r=cv.getBoundingClientRect();return[Math.round((e.clientX-r.left)/r.width*10000)/10,Math.round((e.clientY-r.top)/r.width*10000)/10,prs(e)]}
+function bPinchStart(){const p=[...BRD.ptrs.values()];if(p.length<2)return;if(BRD.draw){const T=boardTarget(),s=BRD.draw.s;if(s.p.length<=9){const i=T.strokes.indexOf(s);if(i>=0)T.strokes.splice(i,1);drawBoardInk()}BRD.draw=null;SFX.scratchStop()}BRD.drag=null;
+  BRD.pinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),mx:(p[0].x+p[1].x)/2,my:(p[0].y+p[1].y)/2,z:BRD.z,zx:BRD.zx,zy:BRD.zy}}
+function bPinchMove(){const p=[...BRD.ptrs.values()],P0=BRD.pinch;if(!P0||p.length<2)return;const G=BRD.g,d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),mx=(p[0].x+p[1].x)/2,my=(p[0].y+p[1].y)/2;
+  const z=Math.max(1,Math.min(4,P0.z*d/P0.d)),lx=(P0.mx-G.bx-P0.zx)/P0.z,ly=(P0.my-G.by-P0.zy)/P0.z;let zx=mx-G.bx-lx*z,zy=my-G.by-ly*z;
+  const minx=G.bw-G.bw*z,miny=G.bh-G.bh*z;zx=Math.min(0,Math.max(minx,zx));zy=Math.min(0,Math.max(miny,zy));BRD.z=z;BRD.zx=zx;BRD.zy=zy;stageXf()}
+function bPinchEnd(){if(!BRD.pinch)return;BRD.pinch=null;if(Math.abs(BRD.z-1)<.04){BRD.z=1;BRD.zx=BRD.zy=0;stageXf()}const want=Math.min((Math.min(window.devicePixelRatio||1,2))*Math.max(1,BRD.z),Math.sqrt(6e6/(BRD.g.tg.w*BRD.g.tg.h)));if(Math.abs(want-BRD.cap)>.3){boardInkRes();drawBoardInk()}}
+const stageEl=$('#bStage');
+stageEl.addEventListener('pointerdown',e=>{BRD.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(BRD.ptrs.size===2)bPinchStart()},true);
+stageEl.addEventListener('pointermove',e=>{if(!BRD.ptrs.has(e.pointerId))return;BRD.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(BRD.pinch)bPinchMove()},true);
+const bUp=e=>{BRD.ptrs.delete(e.pointerId);if(BRD.ptrs.size<2)bPinchEnd()};
+stageEl.addEventListener('pointerup',bUp,true);stageEl.addEventListener('pointercancel',bUp,true);
+const inkEl=$('#boardInk');
+inkEl.addEventListener('pointerdown',e=>{if(BRD.pinch||BRD.ptrs.size>1)return;const k=boardTool();if(k==='mano')return;SFX.unlock();try{inkEl.setPointerCapture(e.pointerId)}catch(_){}
+  const s={k,p:bPoint(e)};if(k==='crayon'||k==='marcadorG'||k==='color')s.c=DB.cartColor||PALETTE[0][1];const T=boardTarget();T.strokes.push(s);BRD.draw={s,id:e.pointerId};
+  const x=inkEl.getContext('2d'),kk=inkEl.width/1000;x.setTransform(kk,0,0,kk,0,0);drawStroke(x,s,kk);SFX.play('down',k==='borradorP'?'borrador':'marcador');SFX.scratchStart(k);SFX.scratchMove(e.clientX,e.clientY)});
+inkEl.addEventListener('pointermove',e=>{const D=BRD.draw;if(!D||D.id!==e.pointerId||BRD.pinch)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e],x=inkEl.getContext('2d'),kk=inkEl.width/1000,t=TOOLS[D.s.k];
+  for(const ev of (evs.length?evs:[e])){const q=bPoint(ev),p=D.s.p,n=p.length;if(Math.hypot(q[0]-p[n-3],q[1]-p[n-2])<1.2)continue;p.push(q[0],q[1],q[2]);
+    x.setTransform(kk,0,0,kk,0,0);x.save();const dl=DL;DL=0;setStyle(x,t,kk,D.s.c);piece(x,t,p,p.length/3-1);DL=dl;x.restore()}SFX.scratchMove(e.clientX,e.clientY)});
+const inkUp=e=>{const D=BRD.draw;if(!D||D.id!==e.pointerId)return;BRD.draw=null;SFX.scratchStop();drawBoardInk();save()};
+inkEl.addEventListener('pointerup',inkUp);inkEl.addEventListener('pointercancel',inkUp);
+/* mover hojas con la mano */
+$('#bSheets').addEventListener('pointerdown',e=>{const d=e.target.closest('.bsheet');if(!d||BRD.ptrs.size>1)return;if(e.target.classList.contains('quitar'))return;const s=brdData().sheets.find(q=>q.id===d.dataset.id);if(!s)return;
+  try{d.setPointerCapture(e.pointerId)}catch(_){}const top=Math.max(0,...brdData().sheets.map(q=>q.z))+1;s.z=top;d.style.zIndex=top;
+  BRD.drag={s,d,id:e.pointerId,x0:e.clientX,y0:e.clientY,sx:s.x,sy:s.y,moved:false,t:setTimeout(()=>{if(BRD.drag&&!BRD.drag.moved){const q=document.createElement('button');q.className='quitar';q.textContent='Quitar';
+    q.addEventListener('click',ev=>{ev.stopPropagation();const bd=brdData();bd.sheets.splice(bd.sheets.indexOf(s),1);save();SFX.play('pop');renderSheets()});d.appendChild(q);setTimeout(()=>q.remove(),3500);SFX.play('tick')}},900)};SFX.play('pick','marcador')});
+$('#bSheets').addEventListener('pointermove',e=>{const D=BRD.drag;if(!D||D.id!==e.pointerId||BRD.pinch)return;const G=BRD.g,dx=(e.clientX-D.x0)/BRD.z,dy=(e.clientY-D.y0)/BRD.z;if(!D.moved&&Math.hypot(dx,dy)<4)return;if(!D.moved){D.moved=true;clearTimeout(D.t)}
+  D.s.x=Math.max(60,Math.min(940,D.sx+dx/G.bw*1000));D.s.y=Math.max(0,Math.min(G.bh/G.bw*1000-120,D.sy+dy/G.bw*1000));const sw=G.bw*.27,shh=sw*275/210;D.d.style.left=(D.s.x/1000*G.bw-sw/2)+'px';D.d.style.top=(D.s.y/1000*G.bw-shh*.08)+'px'});
+const dragUp=e=>{const D=BRD.drag;if(!D||D.id!==e.pointerId)return;clearTimeout(D.t);BRD.drag=null;if(D.moved)SFX.play('tick');save()};
+$('#bSheets').addEventListener('pointerup',dragUp);$('#bSheets').addEventListener('pointercancel',dragUp);
+/* colgar la hoja actual (una copia) */
+function hangPage(book,page){const bd=brdData();if(bd.sheets.length>=12){toast('El pizarrón ya tiene 12 hojas; quita una primero',2600);return}
+  if(!page.text.trim()&&!page.strokes.length){toast('Esta hoja está en blanco');return}
+  const n=bd.sheets.length,col=n%3,row=Math.floor(n/3)%4;
+  bd.sheets.push({id:uid(),bookId:book.id,pageId:page.id,kind:book.kind||'rayas',text:page.text,strokes:JSON.parse(JSON.stringify(page.strokes)),x:180+col*320+(Math.random()-.5)*30,y:40+row*330+(Math.random()-.5)*20,a:+((Math.random()-.5)*6).toFixed(1),z:Math.max(0,...bd.sheets.map(q=>q.z))+1,m:MAGNETS[n%MAGNETS.length]});
+  save();SFX.play('pop');toast('Copia de la hoja colgada en el pizarrón',2200)}
+$('#mHang').addEventListener('click',()=>{const b=B();if(b.closed){toast('Abre el cuaderno primero');return}closeAll();hangPage(b,cur());setTimeout(()=>setView('board'),500)});
+/* cartulinas */
+function cartThumb(c,w,h){const cv=document.createElement('canvas'),pr=2;cv.width=w*pr;cv.height=h*pr;const x=cv.getContext('2d');x.fillStyle=c.color;x.fillRect(0,0,cv.width,cv.height);const k=cv.width/1000;x.setTransform(k,0,0,k,0,0);const dl=DL;DL=0;for(const s of c.strokes)drawStroke(x,s,k);DL=dl;return cv}
+function showCarts(){brdData();const l=openPanel('Mis cartulinas'),grid=document.createElement('div');grid.className='covers cartgrid';
+  for(const c of DB.cartulinas){const b=document.createElement('button');b.className='cv'+(c.id===DB.cartOn?' now':'');const sp=document.createElement('span');sp.textContent=c.name;b.append(cartThumb(c,84,118),sp);
+    b.addEventListener('click',()=>{DB.cartOn=c.id;save();closeAll();SFX.play('rustle');renderBoard()});grid.appendChild(b)}
+  if(DB.cartulinas.length<6){const nb=document.createElement('button');nb.className='cv';nb.innerHTML='<div class="blank">+</div><span>Nueva</span>';nb.addEventListener('click',()=>newCartForm(l,grid));grid.appendChild(nb)}
+  l.appendChild(grid);if(DB.cartulinas.length>=6){const p=document.createElement('p');p.className='empty';p.textContent='Ya tienes 6 cartulinas. Tira una para hacer otra.';l.appendChild(p)}
+  if(DB.cartulinas.length){const h=document.createElement('h3');h.textContent='Tirar una cartulina';l.appendChild(h);
+    for(const c of DB.cartulinas)l.appendChild(rowOf(cartThumb(c,56,78),c.name,(c.strokes.length?c.strokes.length+' trazos':'Sin dibujar'),[confirmBtn('Tirar',()=>{DB.cartulinas.splice(DB.cartulinas.indexOf(c),1);if(DB.cartOn===c.id)DB.cartOn=null;save();showCarts();if(VIEW==='board')renderBoard()})]))}}
+function newCartForm(l,grid){if(l.querySelector('.nbform'))return;let color=CART_COLORS[0][1];const f=document.createElement('form');f.className='nbform';
+  f.innerHTML='<label for="ctName">Nombre</label><input id="ctName" maxlength="24" placeholder="Ej. Mi dibujo" autocomplete="off"><label>Color de la cartulina</label><div class="sw" role="radiogroup" aria-label="Color de la cartulina"></div><button class="act" type="submit">Pegar en el pizarrón</button>';
+  const sw=f.querySelector('.sw');for(const [n,c] of CART_COLORS){const b=document.createElement('button');b.type='button';b.className='swb'+(c===color?' sel':'');b.style.background=c;b.setAttribute('aria-label',n);b.title=n;
+    b.addEventListener('click',()=>{color=c;sw.querySelectorAll('.swb').forEach(x=>x.classList.toggle('sel',x===b))});sw.appendChild(b)}
+  f.addEventListener('submit',e=>{e.preventDefault();const name=f.querySelector('input').value.trim()||('Cartulina '+(DB.cartulinas.length+1));const c={id:uid(),name,color,strokes:[],created:Date.now()};
+    DB.cartulinas.push(c);DB.cartOn=c.id;if(color==='#26262a'&&!DB.seenBlackCart){DB.seenBlackCart=1;setTimeout(()=>toast('En cartulina negra lucen más los colores claros',2800),900)}save();f.querySelector('input').blur();closeAll();SFX.play('rustle');renderBoard()});
+  l.insertBefore(f,grid);setTimeout(()=>{try{f.querySelector('input').focus()}catch(_){}},50)}
+$('#bTube').addEventListener('click',()=>{SFX.play('rustle');showCarts()});
+window.addEventListener('resize',()=>{if(VIEW==='board'){clearTimeout(BRD.rz);BRD.rz=setTimeout(renderBoard,160)}});
 
 /* luna llena con mares, cráteres, los rayos de Tycho y oscurecimiento en la orilla */
 let MOONC=null;
