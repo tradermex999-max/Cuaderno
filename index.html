@@ -180,6 +180,8 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
 .cv canvas,.cv .blank{width:84px;height:110px;border-radius:2px 5px 5px 2px;box-shadow:2px 3px 6px rgba(0,0,0,.3)}
 .cv .blank{box-sizing:border-box;border:2px dashed rgba(43,41,37,.35);box-shadow:none;display:flex;align-items:center;justify-content:center;font:36px var(--label);color:var(--ui-mute)}
 .cv.now canvas{outline:3px solid var(--accent);outline-offset:3px}
+.cv small.kd{font:13px var(--label);color:var(--ui-mute);margin-top:-5px}
+.nbform .seg{flex:none}
 .cv span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nbform{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:#f3eee2;margin-bottom:6px}
 .nbform label{font-size:16px;color:var(--ui-mute)}
@@ -404,6 +406,7 @@ function __start(){(function(){
 'use strict';
 const $=s=>document.querySelector(s);
 const KEY='cuaderno-rayas-v2',OLD='cuaderno-rayas-v1',MAXP=100;
+const KINDN={rayas:'Rayas',cuadro:'Cuadro chico',dibujo:'Dibujo'},maxP=b=>b&&b.kind==='dibujo'?50:MAXP;
 const TOOLS={
   lapiz:{label:'Lápiz amarillo',w:3.6,color:'#46464c',alpha:.78,tex:true},
   verde:{label:'Lápiz de dibujo',w:4.8,color:'#2a2b30',alpha:.88,tex:true},
@@ -426,7 +429,7 @@ const INTRO="Mi cuaderno\n\nToca el botón de arriba a la derecha para sacar tus
 /* ---------- datos ---------- */
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newPage=()=>({id:uid(),text:'',strokes:[],fold:false,topic:'',created:Date.now()});
-const newBook=(name,color)=>({id:uid(),name,color,pages:[newPage()],trash:[],cur:0,closed:false,created:Date.now()});
+const newBook=(name,color,kind)=>({id:uid(),name,color,kind:kind||'rayas',pages:[newPage()],trash:[],cur:0,closed:false,created:Date.now()});
 const fixPage=p=>{const q={...p,id:p.id||uid(),text:p.text||'',strokes:p.strokes||[],fold:!!(p.fold||p.folded||p.foldTop||p.foldBot),topic:p.topic||''};delete q.folded;delete q.foldTop;delete q.foldBot;return q};
 let DB=null,fresh=false;
 try{DB=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){DB=null}
@@ -438,7 +441,7 @@ if(!DB||!Array.isArray(DB.books)||!DB.books.length){
   DB={v:2,books:[b],cur:b.id,tool:(old&&TOOLS[old.tool])?old.tool:'lapiz',thrown:[],seen:0};
 }
 DB.thrown=(DB.thrown||[]).map(b=>({...b,pages:(b.pages||[]).map(fixPage)}));
-for(const b of DB.books){if(!b.pages||!b.pages.length)b.pages=[newPage()];b.pages=b.pages.map(fixPage);b.trash=(b.trash||[]).map(fixPage);b.cur=Math.max(0,Math.min(b.cur|0,b.pages.length-1))}
+for(const b of DB.books){if(!b.kind)b.kind='rayas';if(!b.pages||!b.pages.length)b.pages=[newPage()];b.pages=b.pages.map(fixPage);b.trash=(b.trash||[]).map(fixPage);b.cur=Math.max(0,Math.min(b.cur|0,b.pages.length-1))}
 if(!DB.books.some(b=>b.id===DB.cur))DB.cur=DB.books[0].id;
 if(!TOOLS[DB.tool]||DB.tool==='sacapuntas')DB.tool='lapiz';
 if(!INKSET[DB.ink])DB.ink='lapiz';if(!DB.color)DB.color=PALETTE[0][1];DB.dull=DB.dull||{lapiz:0,verde:0,color:0};if(DB.vol==null)DB.vol=.6;
@@ -502,9 +505,9 @@ const SFX=(function(){
     const b=ctx.createBuffer(1,a.length,sr),d=b.getChannelData(0);for(let i=0;i<a.length;i++)d[i]=a[i]*k;
     const s=ctx.createBufferSource();s.buffer=b;s.connect(master);s.start(ctx.currentTime+(at||0))}
   const S={
-    flip(land){const d=.85,o=N(d);
-      const air=noise(d);sweep(air,'lp',2600,480,.6);env(air,t=>{const x=t/.62;return x<1?Math.pow(Math.sin(Math.PI*x),1.5):0});mix(o,air,.35);
-      const cr=N(d);grains(cr,.02,.55,t=>t<.08?t/.08*1000:1000*Math.max(0,1-(t-.08)/.47),()=>.9*pl(2.6),.0004,.004,6);filt(cr,Bq('hp',1400,.7),Bq('pk',3800,1,5));mix(o,cr,.6);
+    flip(land){const d=.85,o=N(d);let thick=false;try{thick=B().kind==='dibujo'}catch(e){}
+      const air=noise(d);sweep(air,'lp',thick?1700:2600,thick?320:480,.6);env(air,t=>{const x=t/.62;return x<1?Math.pow(Math.sin(Math.PI*x),1.5):0});mix(o,air,.35);
+      const cr=N(d);grains(cr,.02,.55,t=>t<.08?t/.08*1000:1000*Math.max(0,1-(t-.08)/.47),()=>.9*pl(2.6),.0004,.004,6);filt(cr,Bq('hp',1400,.7),Bq('pk',3800,1,5));mix(o,cr,thick?.24:.6);
       const fl=noise(d);filt(fl,Bq('bp',1100,.8));env(fl,t=>t>.15&&t<.6?Math.sin(Math.PI*(t-.15)/.45)*(.55+.45*Math.sin(2*Math.PI*(36-t*22)*t)):0);mix(o,fl,.22);
       for(let i=0;i<3;i++)wire(o,.005+Math.random()*.08,.012);
       if(land){const sl=noise(.07);env(sl,t=>Math.exp(-t/.008));filt(sl,Bq('lp',3200,.7));mix(o,sl,.5,land);modes(o,land,[[170,.05,1],[310,.03,.5]],.1);for(let i=0;i<2;i++)wire(o,land+.004+Math.random()*.03,.01)}
@@ -821,28 +824,31 @@ const TOP=build($('#top'),true),UNDER=build($('#under'),false),MID=build($('#mid
 const LEAF=$('#leaf'),BACK={el:$('#back'),cv:$('#back canvas'),shade:$('#back .shade')},COVER=$('#cover'),FSHW=$('#fshadow'),FSH=$('#fshadow>div');
 
 let L={},Z={z:1,x:0,y:0};
-function makePaper(){
+function makePaper(kind){kind=kind||'rayas';
   const {W,H,lh,top,rows,ml}=L,pr=Math.min(window.devicePixelRatio||1,2),r=rng(42);
   const c=document.createElement('canvas');c.width=Math.round(W*pr);c.height=Math.round(H*pr);const x=c.getContext('2d');x.scale(pr,pr);
-  x.fillStyle='#fbfaf2';x.fillRect(0,0,W,H);
-  mottle(x,W,H,r,[[28,.08],[8,.05]],[150,128,95],[255,253,244]);
+  x.fillStyle=kind==='dibujo'?'#fcfbf6':'#fbfaf2';x.fillRect(0,0,W,H);
+  mottle(x,W,H,r,kind==='dibujo'?[[24,.035],[6,.03],[2.5,.035]]:[[28,.08],[8,.05]],[150,128,95],[255,253,244]);
   x.lineCap='round';
   for(let i=0,n=Math.round(W*H/420);i<n;i++){const sx=r()*W,sy=r()*H,a=r()*6.283,l=2+r()*7,light=r()<.3;
     x.strokeStyle=light?`rgba(255,255,255,${.3+r()*.35})`:`rgba(${120+r()*40|0},${105+r()*30|0},80,${.05+r()*.08})`;x.lineWidth=.3+r()*.35;
     x.beginPath();x.moveTo(sx,sy);x.quadraticCurveTo(sx+Math.cos(a+.7)*l*.5,sy+Math.sin(a+.7)*l*.5,sx+Math.cos(a)*l,sy+Math.sin(a)*l);x.stroke()}
   x.lineCap='butt';const seg=5;
-  for(let i=0;i<=rows;i++){const y=Math.round((top+i*lh)*pr)/pr+.5/pr;
+  if(kind==='cuadro'){const st=5*L.ppm,y0=top-lh*.5,sn=v=>Math.round(v*pr)/pr+.5/pr;x.lineWidth=.7;
+    for(let y=y0;y<H;y+=st){x.strokeStyle=`rgba(110,163,203,${.36+r()*.16})`;x.beginPath();x.moveTo(0,sn(y));x.lineTo(W,sn(y));x.stroke()}
+    for(let xx=ml%st;xx<W;xx+=st){x.strokeStyle=`rgba(110,163,203,${.36+r()*.16})`;x.beginPath();x.moveTo(sn(xx),sn(y0));x.lineTo(sn(xx),H);x.stroke()}}
+  if(kind==='rayas')for(let i=0;i<=rows;i++){const y=Math.round((top+i*lh)*pr)/pr+.5/pr;
     for(let sx=0;sx<W;sx+=seg){x.strokeStyle=`rgba(110,163,203,${.5+r()*.26})`;x.lineWidth=.85;x.beginPath();x.moveTo(sx,y);x.lineTo(Math.min(W,sx+seg),y);x.stroke()}}
-  for(let sy=0;sy<H;sy+=seg){x.strokeStyle=`rgba(212,78,72,${.55+r()*.25})`;x.lineWidth=1.1;x.beginPath();x.moveTo(ml,sy);x.lineTo(ml,sy+seg);x.stroke()}
+  if(kind!=='dibujo')for(let sy=0;sy<H;sy+=seg){x.strokeStyle=`rgba(212,78,72,${.55+r()*.25})`;x.lineWidth=1.1;x.beginPath();x.moveTo(ml,sy);x.lineTo(ml,sy+seg);x.stroke()}
   const pitch=Math.max(14,W*.045),hr=Math.max(2.6,W*.0085),hx=W*.03;
   for(let y=pitch/2;y<H-2;y+=pitch){const g=x.createRadialGradient(hx+hr*.35,y+hr*.4,hr*.2,hx,y,hr);g.addColorStop(0,'#e6e1d4');g.addColorStop(.72,'#cec7b5');g.addColorStop(1,'#958c78');x.fillStyle=g;x.beginPath();x.arc(hx,y,hr,0,6.283);x.fill()}
-  x.save();x.globalAlpha=.4;x.fillStyle=x.strokeStyle='#5d8db7';const fs=Math.max(9,top*.24),mx0=W*.075,my0=top*.5;
+  if(kind!=='dibujo'){x.save();x.globalAlpha=.4;x.fillStyle=x.strokeStyle='#5d8db7';const fs=Math.max(9,top*.24),mx0=W*.075,my0=top*.5;
   x.beginPath();x.moveTo(mx0,my0+fs*.35);x.lineTo(mx0+fs*.55,my0-fs*.45);x.lineTo(mx0+fs*.8,my0-fs*.25);x.closePath();x.fill();
   x.font=`italic ${fs}px 'Patrick Hand','Kalam',cursive`;x.textBaseline='middle';x.fillText('Renglón',mx0+fs*.95,my0);
-  const tw=x.measureText('Renglón').width;x.lineWidth=.8;x.beginPath();x.moveTo(mx0+fs*.95,my0+fs*.55);x.quadraticCurveTo(mx0+fs*.95+tw*.5,my0+fs*.8,mx0+fs*.95+tw,my0+fs*.45);x.stroke();x.restore();
+  const tw=x.measureText('Renglón').width;x.lineWidth=.8;x.beginPath();x.moveTo(mx0+fs*.95,my0+fs*.55);x.quadraticCurveTo(mx0+fs*.95+tw*.5,my0+fs*.8,mx0+fs*.95+tw,my0+fs*.45);x.stroke();x.restore()}
   let g=x.createLinearGradient(0,0,W*.1,0);g.addColorStop(0,'rgba(90,70,40,.13)');g.addColorStop(1,'rgba(90,70,40,0)');x.fillStyle=g;x.fillRect(0,0,W*.1,H);
   g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'rgba(255,255,255,.07)');g.addColorStop(1,'rgba(110,90,60,.06)');x.fillStyle=g;x.fillRect(0,0,W,H);
-  grainPass(x,c,r,9);
+  grainPass(x,c,r,kind==='dibujo'?12:9);
   return c}
 
 function rr(x,X,Y,w,h,rad){x.beginPath();x.moveTo(X+rad,Y);x.arcTo(X+w,Y,X+w,Y+h,rad);x.arcTo(X+w,Y+h,X,Y+h,rad);x.arcTo(X,Y+h,X,Y,rad);x.arcTo(X,Y,X+w,Y,rad);x.closePath()}
@@ -866,8 +872,13 @@ function drawCover(cv,book,w,h,pr){
   const nx=row('NOMBRE',ly+lh*.42);row('MATERIA',ly+lh*.78);
   x.save();x.beginPath();x.rect(nx,ly,lx+lw-w*.04-nx,lh);x.clip();x.fillStyle='#1f2c62';x.font=`${w*.062}px Kalam,cursive`;x.fillText(book.name||'',nx,ly+lh*.42);x.restore();
   x.fillStyle=lum(book.color)>.6?'rgba(40,30,10,.75)':'rgba(255,255,255,.85)';
-  x.font=`italic ${w*.07}px 'Patrick Hand',sans-serif`;x.fillText('Renglón',w*.2,h*.87);
-  x.font=`${w*.029}px 'Patrick Hand',sans-serif`;try{x.letterSpacing=(w*.004)+'px'}catch(_){}x.fillText('PROFESIONAL · 100 HOJAS · RAYA',w*.2,h*.92);
+  const K=book.kind||'rayas';
+  if(K==='dibujo'){x.save();x.font=`700 ${w*.085}px 'Patrick Hand',sans-serif`;try{x.letterSpacing=(w*.022)+'px'}catch(_){}x.fillText('DIBUJO',w*.2,h*.63);x.restore();
+    x.save();x.translate(w*.62,h*.74);x.rotate(-.55);const pl=w*.26,pw=w*.032;x.globalAlpha=.9;x.fillStyle='#f2c12c';x.fillRect(0,-pw/2,pl,pw);x.fillStyle='#e9a7b0';x.fillRect(pl,-pw/2,pw*1.2,pw);x.fillStyle='#bfc4c9';x.fillRect(pl-pw*.35,-pw/2,pw*.45,pw);
+      x.fillStyle='#e8c69a';x.beginPath();x.moveTo(0,-pw/2);x.lineTo(-pw*1.6,0);x.lineTo(0,pw/2);x.closePath();x.fill();x.fillStyle='#333';x.beginPath();x.moveTo(-pw*1.05,-pw*.17);x.lineTo(-pw*1.6,0);x.lineTo(-pw*1.05,pw*.17);x.closePath();x.fill();
+      x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=Math.max(.4,w*.002);x.strokeRect(0,-pw/2,pl,pw);x.restore()}
+  x.font=`italic ${w*.07}px 'Patrick Hand',sans-serif`;x.fillText(K==='dibujo'?'Trazo':'Renglón',w*.2,h*.87);
+  x.font=`${w*.029}px 'Patrick Hand',sans-serif`;try{x.letterSpacing=(w*.004)+'px'}catch(_){}x.fillText({rayas:'PROFESIONAL · 100 HOJAS · RAYA',cuadro:'PROFESIONAL · 100 HOJAS · CUADRO CHICO',dibujo:'PROFESIONAL · 50 HOJAS · DIBUJO'}[K]||'',w*.2,h*.92);
   grainPass(x,cv,r,7)}
 
 function layout(force){
@@ -882,8 +893,8 @@ function layout(force){
   const zm=$('#zoom').style;zm.left=L.bx+'px';zm.top=L.by+'px';zm.width=W+'px';zm.height=H+'px';
   const s=$('#book').style;s.setProperty('--lh',lh+'px');s.setProperty('--top',top+'px');s.setProperty('--rulesh',(rows*lh)+'px');s.setProperty('--ml',L.ml+'px');
   const co=$('#coils'),pitch=Math.max(14,W*.045);co.innerHTML='';for(let y=pitch/2;y<H-2;y+=pitch){const d=document.createElement('div');d.className='coil';d.style.top=(y-2.5)+'px';co.appendChild(d)}
-  L.paper=makePaper();
-  for(const sh of [TOP,UNDER,MID]){sh.bg.width=L.paper.width;sh.bg.height=L.paper.height;sh.bg.getContext('2d').drawImage(L.paper,0,0);
+  L.papers={};L.paper=null;
+  for(const sh of [TOP,UNDER,MID]){
     sh.cr.setAttribute('viewBox',`0 0 ${W} ${H}`);
     sh.cr.innerHTML=`<g class="ct"><path d="M0 0 L${W} ${H/2}" stroke="#fffaf0" stroke-width="2" opacity=".9"/><path d="M0 1.5 L${W} ${H/2+1.5}" stroke="rgba(90,66,30,.32)" stroke-width="1.2"/></g><g class="cb"><path d="M${W} ${H/2} L0 ${H}" stroke="#fffaf0" stroke-width="2" opacity=".9"/><path d="M${W} ${H/2-1.5} L0 ${H-1.5}" stroke="rgba(90,66,30,.32)" stroke-width="1.2"/></g>`}
   clampZ();applyZ();inkRes();buildTools();renderAll();renderCover();drawLight();
@@ -919,7 +930,9 @@ function renderSheet(sh,page,idx){
   if(sh.top)sh.txt.value=page?page.text:'';else sh.txt.textContent=page?page.text:'';
   sh.topic.textContent=page?page.topic||'':'';
   renderFolds(sh,page);sh.pnum.textContent=page?String(idx+1):'';redraw(sh,page)}
-function renderAll(){const b=B();renderRuler();
+function paperOf(k){k=k||'rayas';return L.papers[k]||(L.papers[k]=makePaper(k))}
+function syncPaper(){if(!L.papers)return;const P=paperOf(B().kind);if(L.paper===P)return;L.paper=P;for(const sh of [TOP,UNDER,MID]){sh.bg.width=P.width;sh.bg.height=P.height;sh.bg.getContext('2d').drawImage(P,0,0)}}
+function renderAll(){const b=B();syncPaper();renderRuler();
   renderSheet(TOP,cur(),b.cur);renderSheet(UNDER,b.pages[b.cur+1]||null,b.cur+1);
   TOP.el.classList.toggle('typing',DB.tool==='teclado');TOP.txt.readOnly=DB.tool!=='teclado';lastText=cur().text}
 function renderCover(){const b=B();drawCover(COVER.querySelector('canvas'),b,L.W,L.H,Math.min(L.dpr,2));
@@ -1320,15 +1333,15 @@ let wz;$('#app').addEventListener('wheel',e=>{e.preventDefault();const o=origin(
 function prepUnderForNext(){const b=B();renderSheet(UNDER,b.pages[b.cur+1]||null,b.cur+1)}
 function prepUnderForTear(){const b=B(),i=b.cur+1<b.pages.length?b.cur+1:b.cur-1;renderSheet(UNDER,b.pages[i]||null,b.cur)}
 function flipNext(from){const b=B();
-  if(b.cur===b.pages.length-1){if(b.pages.length>=MAXP){toast('Ya no quedan hojas en este cuaderno');snapBack();return}b.pages.push(newPage());prepUnderForNext()}
+  if(b.cur===b.pages.length-1){if(b.pages.length>=maxP(b)){toast('Ya no quedan hojas en este cuaderno');snapBack();return}b.pages.push(newPage());prepUnderForNext()}
   busy=true;TOP.txt.blur();drawBack(cur());SFX.play('flip',0);
   const a0=from||0,d=DUR<100?10:Math.round(190+430*(180+a0)/180),ez=a0<-10?ease.out:ease.inOut;
   tween(d,p=>{const e=ez(p);pose(a0+(-180-a0)*e,p>.82?Math.max(0,1-(p-.82)/.18):1)},
     ()=>{b.cur++;clearPose();fastSwap();busy=false;save()})}
 /* voltear el triángulo junto con la hoja de abajo */
 function setupBundle(){const b=B();
-  if(b.cur+1>=b.pages.length&&b.pages.length<MAXP)b.pages.push(newPage());
-  if(b.cur+2>=b.pages.length&&b.pages.length<MAXP)b.pages.push(newPage());
+  if(b.cur+1>=b.pages.length&&b.pages.length<maxP(b))b.pages.push(newPage());
+  if(b.cur+2>=b.pages.length&&b.pages.length<maxP(b))b.pages.push(newPage());
   const mid=b.pages[b.cur+1];if(!mid||!b.pages[b.cur+2])return false;
   renderSheet(MID,mid,b.cur+1);MID.el.hidden=false;renderSheet(UNDER,b.pages[b.cur+2],b.cur+2);UNDER.shade.style.opacity='0';
   MID.shade.style.background='rgba(50,32,12,.14)';MID.shade.style.opacity='0';drawBack(mid,MID.cv);return true}
@@ -1411,10 +1424,11 @@ function throwBook(){closeAll();busy=true;TOP.txt.blur();const bk=$('#book');SFX
 /* ---------- paneles ---------- */
 const firstLine=p=>(p.text||'').split('\n').map(s=>s.trim()).find(Boolean)||(p.strokes.length?'Hoja con escritura a mano':'Hoja en blanco');
 const fmt=t=>new Date(t).toLocaleDateString('es-MX',{day:'numeric',month:'short'});
-function thumb(p){const c=document.createElement('canvas'),w=56,h=73,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');
+function thumb(p,kind){kind=kind||B().kind||'rayas';const c=document.createElement('canvas'),w=56,h=73,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');
   x.fillStyle='#fbfaf4';x.fillRect(0,0,c.width,c.height);const lh=c.height/33.5,top=lh*3.1;
-  x.strokeStyle='#a9cbe0';x.lineWidth=1;for(let y=top;y<c.height-lh;y+=lh){x.beginPath();x.moveTo(0,y);x.lineTo(c.width,y);x.stroke()}
-  x.strokeStyle='#e08b86';x.beginPath();x.moveTo(c.width*.13,0);x.lineTo(c.width*.13,c.height);x.stroke();
+  x.strokeStyle='#a9cbe0';x.lineWidth=1;if(kind==='rayas')for(let y=top;y<c.height-lh;y+=lh){x.beginPath();x.moveTo(0,y);x.lineTo(c.width,y);x.stroke()}
+  if(kind==='cuadro'){const st=c.width/42;x.lineWidth=.6;for(let y=top-lh*.5;y<c.height;y+=st){x.beginPath();x.moveTo(0,y);x.lineTo(c.width,y);x.stroke()}for(let xx=0;xx<c.width;xx+=st){x.beginPath();x.moveTo(xx,top-lh*.5);x.lineTo(xx,c.height);x.stroke()}}
+  if(kind!=='dibujo'){x.strokeStyle='#e08b86';x.lineWidth=1;x.beginPath();x.moveTo(c.width*.13,0);x.lineTo(c.width*.13,c.height);x.stroke()}
   x.fillStyle='#1f2c62';x.font=`${lh*.7}px Kalam,cursive`;(p.text||'').split('\n').slice(0,28).forEach((t,i)=>x.fillText(t.slice(0,40),c.width*.15,top+lh*(i+1)-2));
   const s=c.width/1000;x.setTransform(s,0,0,s,0,0);for(const st of p.strokes)drawStroke(x,st,s);return c}
 function confirmBtn(label,fn){const b=document.createElement('button');b.className='mini danger';b.textContent=label;let armed=false,t;
@@ -1433,12 +1447,12 @@ function showTrash(){const l=openPanel('Papelera de hojas'),bk=B();
   if(!bk.trash.length){l.innerHTML='<div class="empty">La papelera está vacía. Para arrancar una hoja, jálala hacia abajo desde su esquina de arriba, junto al espiral.</div>';return}
   for(const p of bk.trash.slice()){
     l.appendChild(rowOf(thumb(p),p.topic||firstLine(p),`Arrancada el ${fmt(p.torn)} · era la pág. ${(p.from|0)+1}`,[
-      miniBtn('Regresar',()=>{if(bk.pages.length>=MAXP){toast('El cuaderno ya está lleno');return}bk.trash.splice(bk.trash.indexOf(p),1);const at=Math.min(p.from|0,bk.pages.length);delete p.torn;delete p.from;delete p.ball;delete p.fx;delete p.fy;delete p.rot;bk.pages.splice(at,0,p);bk.cur=at;renderAll();save();closeAll();VDIRTY.floor=true;setView('desk');SFX.play('flip',0);toast('Hoja regresada al cuaderno')}),
+      miniBtn('Regresar',()=>{if(bk.pages.length>=maxP(bk)){toast('El cuaderno ya está lleno');return}bk.trash.splice(bk.trash.indexOf(p),1);const at=Math.min(p.from|0,bk.pages.length);delete p.torn;delete p.from;delete p.ball;delete p.fx;delete p.fy;delete p.rot;bk.pages.splice(at,0,p);bk.cur=at;renderAll();save();closeAll();VDIRTY.floor=true;setView('desk');SFX.play('flip',0);toast('Hoja regresada al cuaderno')}),
       confirmBtn('Borrar',()=>{bk.trash.splice(bk.trash.indexOf(p),1);save();SFX.play('rustle');refreshFloor();showTrash()})]))}
   const all=confirmBtn('Vaciar papelera',()=>{bk.trash=[];save();SFX.play('rustle');refreshFloor();showTrash()});all.style.alignSelf='flex-start';l.appendChild(all)}
 function showSwitch(){const l=openPanel('Mis cuadernos');const grid=document.createElement('div');grid.className='covers';
   for(const b of DB.books){const btn=document.createElement('button');btn.className='cv'+(b.id===DB.cur?' now':'');const c=document.createElement('canvas');drawCover(c,b,84,110,2);
-    const sp=document.createElement('span');sp.textContent=b.name;btn.append(c,sp);btn.setAttribute('aria-label','Abrir '+b.name);
+    const sp=document.createElement('span');sp.textContent=b.name;const sm=document.createElement('small');sm.className='kd';sm.textContent=KINDN[b.kind||'rayas'];btn.append(c,sp,sm);btn.setAttribute('aria-label','Abrir '+b.name);
     btn.addEventListener('click',()=>{closeAll();if(b.id===DB.cur){if(b.closed)openBook();return}DB.cur=b.id;b.closed=false;save();showBookIn()});grid.appendChild(btn)}
   const nb=document.createElement('button');nb.className='cv';nb.innerHTML='<div class="blank">+</div><span>Cuaderno nuevo</span>';nb.addEventListener('click',()=>newForm(l,grid));grid.appendChild(nb);l.appendChild(grid);
   if(DB.thrown.length){const h=document.createElement('h3');h.textContent='Cuadernos tirados';l.appendChild(h);
@@ -1448,11 +1462,13 @@ function showSwitch(){const l=openPanel('Mis cuadernos');const grid=document.cre
         confirmBtn('Borrar',()=>{DB.thrown.splice(DB.thrown.indexOf(b),1);save();showSwitch()})]))}}}
 function newForm(l,grid){if(l.querySelector('.nbform'))return;let color=COLORS[DB.books.length%COLORS.length][1];
   const f=document.createElement('form');f.className='nbform';
-  f.innerHTML='<label for="nbName">Nombre del cuaderno</label><input id="nbName" maxlength="28" placeholder="Ej. Matemáticas" autocomplete="off"><div class="sw" role="radiogroup" aria-label="Color de la portada"></div><button class="act" type="submit">Crear cuaderno</button>';
+  let kind='rayas';
+  f.innerHTML='<label for="nbName">Nombre del cuaderno</label><input id="nbName" maxlength="28" placeholder="Ej. Matemáticas" autocomplete="off"><label>Tipo de hoja</label><div class="seg nbk" role="radiogroup" aria-label="Tipo de hoja"><button type="button" data-k="rayas" class="sel">Rayas</button><button type="button" data-k="cuadro">Cuadro chico</button><button type="button" data-k="dibujo">Dibujo</button></div><label>Color de la portada</label><div class="sw" role="radiogroup" aria-label="Color de la portada"></div><button class="act" type="submit">Crear cuaderno</button>';
   const sw=f.querySelector('.sw');for(const [n,c] of COLORS){const b=document.createElement('button');b.type='button';b.className='swb'+(c===color?' sel':'');b.style.background=c;b.setAttribute('aria-label',n);
     b.addEventListener('click',()=>{color=c;sw.querySelectorAll('.swb').forEach(x=>x.classList.toggle('sel',x===b))});sw.appendChild(b)}
-  f.addEventListener('submit',e=>{e.preventDefault();const name=f.querySelector('input').value.trim()||('Cuaderno '+(DB.books.length+1));
-    const b=newBook(name,color);DB.books.push(b);DB.cur=b.id;save();f.querySelector('input').blur();closeAll();showBookIn();toast('Cuaderno nuevo: '+name)});
+  f.querySelectorAll('.nbk button').forEach(b=>b.addEventListener('click',()=>{kind=b.dataset.k;f.querySelectorAll('.nbk button').forEach(x=>x.classList.toggle('sel',x===b))}));
+  f.addEventListener('submit',e=>{e.preventDefault();const name=f.querySelector('input').value.trim()||((kind==='dibujo'?'Dibujo ':'Cuaderno ')+(DB.books.length+1));
+    const b=newBook(name,color,kind);DB.books.push(b);DB.cur=b.id;save();f.querySelector('input').blur();closeAll();showBookIn();toast('Cuaderno nuevo: '+name)});
   l.insertBefore(f,grid);setTimeout(()=>{try{f.querySelector('input').focus()}catch(_){}},50)}
 
 /* ---------- regla fija sobre el cuaderno ---------- */
