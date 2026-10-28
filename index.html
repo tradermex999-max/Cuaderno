@@ -125,6 +125,7 @@ body[data-light=tarde] .coil{box-shadow:-1.5px 2px 1.5px rgba(0,0,0,.55)}
   transition:transform .32s cubic-bezier(.2,.8,.2,1);padding:calc(8px + env(safe-area-inset-top,0px)) 8px 6px;
   background:var(--ui-bg);color:var(--ui-fg);border-radius:0 0 18px 18px;box-shadow:0 12px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:2px}
 #menu.on{transform:translate(-50%,0)}
+#menu .ver{align-self:center;font:13px var(--label);color:var(--ui-mute);margin-top:2px}
 #menu .grab{width:36px;height:4px;border-radius:2px;background:rgba(0,0,0,.18);align-self:center;margin-top:4px}
 #menu hr{border:0;border-top:1px solid rgba(43,41,37,.12);margin:2px 8px;width:auto}
 .mi{display:flex;align-items:center;gap:12px;font:20px var(--hand);background:none;border:0;padding:9px 10px;border-radius:10px;color:var(--ui-fg);text-align:left;cursor:pointer;width:100%}
@@ -434,6 +435,7 @@ body.raining[data-light=noche] #storm{opacity:1}
   <div class="mrow" id="mRainOpt"><span></span><div class="seg"><button id="mRainSnd" type="button">🔊 Sonido</button><button id="mBolts" type="button">⚡ Rayos</button></div></div>
   <button class="mi" id="mSound"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Sonidos: sí</span></button>
   <button class="mi" id="mZoom" hidden><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20M7.5 10.5h6"/></svg><span>Tamaño normal</span></button>
+  <div class="ver" id="mVer">Versión 12 · 28 oct 2026</div>
   <div class="grab"></div>
 </div>
 <div id="pop"></div>
@@ -2498,8 +2500,11 @@ if('serviceWorker' in navigator)addEventListener('load',function(){
     d.innerHTML='<span>Hay una versión nueva</span>';var b=document.createElement('button');b.textContent='Actualizar';
     b.style.cssText='font:inherit;border:0;border-radius:10px;padding:7px 14px;background:#fffaf0;color:#2b2925;cursor:pointer';
     b.onclick=function(){b.textContent='…';location.reload()};d.appendChild(b);document.body.appendChild(d)}
-  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='upd')bar()});
-  navigator.serviceWorker.addEventListener('controllerchange',function(){if(had)bar();had=true});
+  var t0=Date.now(),busy=function(){var a=document.activeElement;return a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')};
+  function upd(){if(Date.now()-t0<20000&&!busy()){try{sessionStorage.setItem('cuaderno-upd','1')}catch(e){}location.reload()}else bar()}
+  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='upd')upd()});
+  navigator.serviceWorker.addEventListener('controllerchange',function(){if(had)upd();had=true});
+  try{if(sessionStorage.getItem('cuaderno-upd')){sessionStorage.removeItem('cuaderno-upd');setTimeout(function(){var d=document.createElement('div');d.textContent='Cuaderno actualizado ✓';d.style.cssText='position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99999;background:#2b2925;color:#fffaf0;font:17px "Patrick Hand",sans-serif;padding:9px 16px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.5)';document.body.appendChild(d);setTimeout(function(){d.remove()},3200)},1200)}}catch(e){}
   navigator.serviceWorker.register('sw.js').then(function(r){
     function chk(){try{r.update()}catch(e){}fetch('index.html',{cache:'no-cache'}).catch(function(){})}
     document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});
